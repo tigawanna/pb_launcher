@@ -6,6 +6,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"os"
 	"pb_luncher/configs"
 	"pb_luncher/internal/download/domain/dtos"
 	"pb_luncher/internal/download/domain/services"
@@ -114,4 +115,40 @@ func (rv *ReleaseVersionsGithub) FetchReleases(ctx context.Context) ([]dtos.Rele
 		releases = releases[:3]
 	}
 	return releases, nil
+}
+
+func (rv *ReleaseVersionsGithub) Download(ctx context.Context, weburl string) (string, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, weburl, nil)
+	if err != nil {
+		slog.Error("failed to create GitHub releases request", "error", err, "url", rv.repositoryURL)
+		return "", err
+	}
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		slog.Error("failed to fetch GitHub releases", "error", err, "url", rv.repositoryURL)
+		return "", err
+	}
+	defer res.Body.Close()
+
+	tempFile, err := os.CreateTemp("", "release-*.zip")
+	if err != nil {
+		slog.Error("failed to create temp file for release", "error", err)
+		return "", err
+	}
+
+	if _, err := io.Copy(tempFile, res.Body); err != nil {
+		slog.Error("failed to write release to temp file", "error", err, "path", tempFile.Name())
+		tempFile.Close()
+		os.Remove(tempFile.Name())
+		return "", err
+	}
+
+	if err := tempFile.Close(); err != nil {
+		slog.Error("failed to close temp file", "error", err, "path", tempFile.Name())
+		os.Remove(tempFile.Name())
+		return "", err
+	}
+
+	return tempFile.Name(), nil
 }

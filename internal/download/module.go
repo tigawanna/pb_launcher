@@ -27,6 +27,12 @@ var Module = fx.Module("download",
 			fx.As(new(services.ReleaseVersionsService)),
 		),
 	),
+	fx.Provide(
+		fx.Annotate(
+			infra_services.NewArtifactStorage,
+			fx.As(new(services.ArtifactStorage)),
+		),
+	),
 	fx.Provide(domain.NewDownloadUsecase),
 	fx.Invoke(releaseSyncWorker),
 )

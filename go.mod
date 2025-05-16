@@ -8,6 +8,7 @@ require (
 	github.com/spf13/cobra v1.9.1
 	github.com/stretchr/testify v1.10.0
 	github.com/tidwall/gjson v1.18.0
+	github.com/wailsapp/mimetype v1.4.1
 	go.uber.org/fx v1.24.0
 )
 

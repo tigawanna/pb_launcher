@@ -5,6 +5,7 @@ import (
 	"os"
 	"path"
 	"pb_luncher/configs"
+	"pb_luncher/helpers/unzip"
 	"pb_luncher/internal/download"
 	_ "pb_luncher/migrations"
 	"pb_luncher/server"
@@ -37,6 +38,7 @@ func createRootCommand(app core.App) *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			cnf := configs.ReadConfigs()
 			fx.New(
+				fx.Provide(unzip.NewUnzip),
 				fx.Supply(cnf, app),
 				download.Module,
 				fx.Invoke(server.StartPocketbase),
