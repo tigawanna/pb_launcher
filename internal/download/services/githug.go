@@ -26,7 +26,7 @@ func NewReleaseVersionsGithub(c *configs.Configs) *ReleaseVersionsGithub {
 	return &ReleaseVersionsGithub{
 		releaseFilePattern: c.ReleaseFilePattern,
 		repositoryURL: fmt.Sprintf(
-			"https://api.github.com/repos/%s/releases?per_page=3",
+			"https://api.github.com/repos/%s/releases?per_page=10",
 			c.GithubRepository,
 		),
 	}
@@ -50,8 +50,11 @@ func (rv *ReleaseVersionsGithub) searchAsset(assets []gjson.Result) (dtos.Releas
 func (rv *ReleaseVersionsGithub) parseReleases(data []byte) []dtos.Release {
 	var releases []dtos.Release
 	results := gjson.ParseBytes(data).Array()
-
+	// prerelease
 	for _, obj := range results {
+		if obj.Get("prerelease").Bool() {
+			continue
+		}
 		releaseName := obj.Get("name").String()
 		publishedAt := obj.Get("published_at").Time()
 		tagName := obj.Get("tag_name").String()
@@ -106,5 +109,9 @@ func (rv *ReleaseVersionsGithub) FetchReleases(ctx context.Context) ([]dtos.Rele
 		slog.Error("error reading GitHub response body", "error", err, "url", rv.repositoryURL)
 		return nil, err
 	}
-	return rv.parseReleases(data), nil
+	releases := rv.parseReleases(data)
+	if len(releases) > 3 {
+		releases = releases[:3]
+	}
+	return releases, nil
 }
