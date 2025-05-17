@@ -110,8 +110,8 @@ func (p *Process) Stop() error {
 		slog.Error("failed to stop process", "error", err, "process_id", p.id)
 		return err
 	}
-	// brief pause to ensure waitForExit completes status update to Stopped
-	time.Sleep(10 * time.Millisecond)
+	// pause to ensure waitForExit completes status update to Stopped
+	time.Sleep(time.Second)
 	return nil
 }
 
