@@ -1,10 +1,10 @@
 package process
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"os/exec"
-	"sync"
 	"syscall"
 	"time"
 )
@@ -31,8 +31,9 @@ type Process struct {
 	command string
 	args    []string
 
-	h    *handler
-	wait sync.WaitGroup
+	h *handler
+
+	closeChan chan struct{}
 }
 
 func New(ID string, command string, args []string, options ...ProcessOption) *Process {
@@ -68,16 +69,16 @@ func (p *Process) Start() error {
 		slog.Error("failed to start process", "error", err, "process_id", p.id)
 		return err
 	}
-	p.wait.Add(1)
 
-	go p.waitForExit(cmd)
+	p.closeChan = make(chan struct{})
+	go p.waitForExit(cmd, p.closeChan)
 
 	p.h.replaceCommand(cmd)
 	p.h.updateStatus(Running)
 	return nil
 }
 
-func (p *Process) waitForExit(cmd *exec.Cmd) {
+func (p *Process) waitForExit(cmd *exec.Cmd, doneChan chan struct{}) {
 	if err := cmd.Wait(); err != nil {
 		if err.Error() != "signal: terminated" {
 			if p.options.errChan != nil {
@@ -90,6 +91,9 @@ func (p *Process) waitForExit(cmd *exec.Cmd) {
 		}
 	}
 	p.h.updateStatus(Stopped)
+	if doneChan != nil {
+		close(doneChan)
+	}
 }
 
 func (p *Process) Stop() error {
@@ -110,8 +114,17 @@ func (p *Process) Stop() error {
 		slog.Error("failed to stop process", "error", err, "process_id", p.id)
 		return err
 	}
-	// pause to ensure waitForExit completes status update to Stopped
-	time.Sleep(time.Second)
+	// brief pause to ensure waitForExit completes status update to Stopped
+	// time.Sleep(100 * time.Millisecond)
+	if p.closeChan != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+		defer cancel()
+
+		select {
+		case <-p.closeChan:
+		case <-ctx.Done():
+		}
+	}
 	return nil
 }
 

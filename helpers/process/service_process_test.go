@@ -3,6 +3,7 @@ package process_test
 import (
 	"pb_luncher/helpers/process"
 	"testing"
+	"time"
 )
 
 func TestProcess_StartAndStop(t *testing.T) {
@@ -27,8 +28,7 @@ func TestProcess_StartAndStop(t *testing.T) {
 }
 
 func TestProcess_Restart(t *testing.T) {
-	errChan := make(chan process.ProcessErrorMessage, 1)
-	service := process.New("test-service", "sleep", []string{"2"}, process.WithErrorChan(errChan))
+	service := process.New("test-service", "sleep", []string{"2"})
 
 	if err := service.Start(); err != nil {
 		t.Fatalf("failed to start service: %v", err)
@@ -117,5 +117,36 @@ func TestProcess_AggressiveRestart(t *testing.T) {
 
 	if service.IsRunning() {
 		t.Fatalf("service should not be running after final stop")
+	}
+}
+
+func TestProcess_ErrorChannel(t *testing.T) {
+	errChan := make(chan process.ProcessErrorMessage, 1)
+	service := process.New("test-service", "false", nil, process.WithErrorChan(errChan))
+
+	// Iniciar el proceso que fallará inmediatamente
+	if err := service.Start(); err != nil {
+		t.Fatalf("failed to start error-prone service: %v", err)
+	}
+
+	// Verifica que el canal de errores reciba un mensaje
+	select {
+	case errMsg := <-errChan:
+		if errMsg.Error == nil {
+			t.Fatalf("expected error, got nil")
+		}
+		t.Logf("received expected error: %v", errMsg.Error)
+	case <-time.After(2 * time.Second):
+		t.Fatalf("timeout waiting for error message")
+	}
+
+	// Asegurar que el servicio se detuvo correctamente
+	if service.IsRunning() {
+		t.Fatalf("service should not be running after error")
+	}
+
+	// Limpiar al final
+	if err := service.Stop(); err != nil {
+		t.Fatalf("failed to stop service after error: %v", err)
 	}
 }
