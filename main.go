@@ -41,6 +41,7 @@ func createRootCommand(app core.App) *cobra.Command {
 				fx.Provide(unzip.NewUnzip),
 				fx.Supply(cnf, app),
 				download.Module,
+				download.Module,
 				fx.Invoke(server.StartPocketbase),
 			).Run()
 		},
