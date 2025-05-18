@@ -3,9 +3,9 @@ package repos
 import (
 	"context"
 	"log/slog"
-	"pb_luncher/collections"
-	"pb_luncher/internal/download/domain/dtos"
-	"pb_luncher/internal/download/domain/repositories"
+	"pb_launcher/collections"
+	"pb_launcher/internal/download/domain/dtos"
+	"pb_launcher/internal/download/domain/repositories"
 
 	"github.com/hashicorp/go-version"
 	"github.com/pocketbase/pocketbase"

@@ -3,7 +3,7 @@ package taskrunner_test
 import (
 	"context"
 	"fmt"
-	"pb_luncher/helpers/taskrunner"
+	"pb_launcher/helpers/taskrunner"
 	"sync"
 	"sync/atomic"
 	"testing"

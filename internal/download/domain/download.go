@@ -5,10 +5,10 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
-	"pb_luncher/helpers/unzip"
-	"pb_luncher/internal/download/domain/dtos"
-	"pb_luncher/internal/download/domain/repositories"
-	"pb_luncher/internal/download/domain/services"
+	"pb_launcher/helpers/unzip"
+	"pb_launcher/internal/download/domain/dtos"
+	"pb_launcher/internal/download/domain/repositories"
+	"pb_launcher/internal/download/domain/services"
 )
 
 type DownloadUsecase struct {

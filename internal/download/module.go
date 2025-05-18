@@ -3,13 +3,13 @@ package download
 import (
 	"context"
 	"log/slog"
-	"pb_luncher/configs"
-	"pb_luncher/helpers/taskrunner"
-	"pb_luncher/internal/download/domain"
-	"pb_luncher/internal/download/domain/repositories"
-	"pb_luncher/internal/download/domain/services"
-	"pb_luncher/internal/download/repos"
-	infra_services "pb_luncher/internal/download/services"
+	"pb_launcher/configs"
+	"pb_launcher/helpers/taskrunner"
+	"pb_launcher/internal/download/domain"
+	"pb_launcher/internal/download/domain/repositories"
+	"pb_launcher/internal/download/domain/services"
+	"pb_launcher/internal/download/repos"
+	infra_services "pb_launcher/internal/download/services"
 
 	"go.uber.org/fx"
 )

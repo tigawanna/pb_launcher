@@ -1,7 +1,7 @@
 package process_test
 
 import (
-	"pb_luncher/helpers/process"
+	"pb_launcher/helpers/process"
 	"testing"
 	"time"
 )

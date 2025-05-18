@@ -1,7 +1,7 @@
 package migrations
 
 import (
-	"pb_luncher/collections"
+	"pb_launcher/collections"
 
 	"github.com/pocketbase/pocketbase/core"
 	m "github.com/pocketbase/pocketbase/migrations"

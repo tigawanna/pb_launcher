@@ -2,7 +2,7 @@ package repositories
 
 import (
 	"context"
-	"pb_luncher/internal/download/domain/dtos"
+	"pb_launcher/internal/download/domain/dtos"
 )
 
 type ReleaseVersionRepository interface {

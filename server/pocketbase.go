@@ -3,7 +3,7 @@ package server
 import (
 	"context"
 	"log/slog"
-	"pb_luncher/configs"
+	"pb_launcher/configs"
 
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/apis"

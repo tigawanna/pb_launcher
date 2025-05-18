@@ -2,7 +2,7 @@ package configs_test
 
 import (
 	"os"
-	"pb_luncher/configs"
+	"pb_launcher/configs"
 	"testing"
 	"time"
 

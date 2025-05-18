@@ -1,4 +1,4 @@
-module pb_luncher
+module pb_launcher
 
 go 1.23.4
 

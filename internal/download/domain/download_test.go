@@ -1,8 +1,8 @@
 package domain_test
 
 import (
-	"pb_luncher/internal/download/domain"
-	"pb_luncher/internal/download/domain/dtos"
+	"pb_launcher/internal/download/domain"
+	"pb_launcher/internal/download/domain/dtos"
 	"testing"
 
 	"github.com/hashicorp/go-version"

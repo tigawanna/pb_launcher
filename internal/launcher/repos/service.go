@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"pb_luncher/collections"
-	"pb_luncher/internal/launcher/domain/models"
-	"pb_luncher/internal/launcher/domain/repositories"
+	"pb_launcher/collections"
+	"pb_launcher/internal/launcher/domain/models"
+	"pb_launcher/internal/launcher/domain/repositories"
 	"time"
 
 	"github.com/pocketbase/dbx"

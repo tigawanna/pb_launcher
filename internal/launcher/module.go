@@ -1,8 +1,8 @@
 package launcher
 
 import (
-	"pb_luncher/internal/launcher/domain/repositories"
-	"pb_luncher/internal/launcher/repos"
+	"pb_launcher/internal/launcher/domain/repositories"
+	"pb_launcher/internal/launcher/repos"
 
 	"go.uber.org/fx"
 )

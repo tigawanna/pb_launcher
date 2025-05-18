@@ -4,7 +4,7 @@ import (
 	"archive/zip"
 	"os"
 	"path/filepath"
-	"pb_luncher/helpers/unzip"
+	"pb_launcher/helpers/unzip"
 	"strings"
 	"testing"
 )

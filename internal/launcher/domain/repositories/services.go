@@ -2,7 +2,7 @@ package repositories
 
 import (
 	"context"
-	"pb_luncher/internal/launcher/domain/models"
+	"pb_launcher/internal/launcher/domain/models"
 )
 
 type ServiceRepository interface {

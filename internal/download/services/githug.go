@@ -7,9 +7,9 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
-	"pb_luncher/configs"
-	"pb_luncher/internal/download/domain/dtos"
-	"pb_luncher/internal/download/domain/services"
+	"pb_launcher/configs"
+	"pb_launcher/internal/download/domain/dtos"
+	"pb_launcher/internal/download/domain/services"
 	"regexp"
 
 	"github.com/hashicorp/go-version"
