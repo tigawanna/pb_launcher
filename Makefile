@@ -1,14 +1,14 @@
 run:
-	@TZ=UTC go run main.go
+	@TZ=UTC go run *.go
 	
 clean:
 	@rm -rf pb_data
 
 upgrade:
-	@go run main.go upgrade
+	@go run *.go upgrade
 
 downgrade:
-	@go run main.go downgrade
+	@go run *.go downgrade
 
 new-migrate:
 	@go run scripts/migration/main.go $(filter-out $@,$(MAKECMDGOALS))

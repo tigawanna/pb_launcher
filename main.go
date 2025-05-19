@@ -7,8 +7,8 @@ import (
 	"pb_launcher/configs"
 	"pb_launcher/helpers/unzip"
 	"pb_launcher/internal/download"
+	"pb_launcher/internal/launcher"
 	_ "pb_launcher/migrations"
-	"pb_launcher/server"
 
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/core"
@@ -17,7 +17,7 @@ import (
 )
 
 func initializeServer() *pocketbase.PocketBase {
-	app := server.NewPocketbaseServer()
+	app := pocketbase.New()
 	if err := app.Bootstrap(); err != nil {
 		slog.Error("Failed to bootstrap PocketBase", "error", err)
 		os.Exit(1)
@@ -41,10 +41,8 @@ func createRootCommand(app core.App) *cobra.Command {
 				fx.Provide(unzip.NewUnzip),
 				fx.Supply(cnf, app),
 				download.Module,
-				fx.Invoke(
-					server.StartPocketbase,
-					download.DownloadReleaseSyncWorker,
-				),
+				launcher.Module,
+				fx.Invoke(Bootstrap),
 			).Run()
 		},
 	}

@@ -1,10 +1,6 @@
 package download
 
 import (
-	"context"
-	"log/slog"
-	"pb_launcher/configs"
-	"pb_launcher/helpers/taskrunner"
 	"pb_launcher/internal/download/domain"
 	"pb_launcher/internal/download/domain/repositories"
 	"pb_launcher/internal/download/domain/services"
@@ -35,27 +31,3 @@ var Module = fx.Module("download",
 	),
 	fx.Provide(domain.NewDownloadUsecase),
 )
-
-func DownloadReleaseSyncWorker(lc fx.Lifecycle, releaseUsecase *domain.DownloadUsecase, cfg *configs.Configs) {
-	var runner = taskrunner.NewTaskRunner(
-		func(ctx context.Context) {
-			if err := releaseUsecase.Run(ctx); err != nil {
-				slog.Error("error processing GitHub release sync task", "error", err)
-			}
-		},
-		cfg.ReleaseSyncInterval,
-	)
-
-	lc.Append(fx.Hook{
-		OnStart: func(ctx context.Context) error {
-			slog.Info("starting GitHub release sync task runner", "interval", cfg.ReleaseSyncInterval)
-			runner.Start()
-			return nil
-		},
-		OnStop: func(ctx context.Context) error {
-			slog.Info("stopping GitHub release sync task runner")
-			runner.Stop()
-			return nil
-		},
-	})
-}
