@@ -13,6 +13,7 @@ type Configs struct {
 	*apis.ServeConfig
 	ReleaseSyncInterval time.Duration // default: 10m
 	DownloadDir         string        // default: ./downloads
+	DataDir             string        // default: ./data
 }
 
 func ReadConfigs() *Configs {
@@ -23,6 +24,7 @@ func ReadConfigs() *Configs {
 
 	syncInterval := 10 * time.Minute
 	downloadDir := "./downloads"
+	dataDir := "./data"
 
 	const minSyncInterval = 5 * time.Minute
 	if envInterval, ok := os.LookupEnv("RELEASE_SYNC_INTERVAL"); ok {
@@ -41,6 +43,9 @@ func ReadConfigs() *Configs {
 	if envDir, ok := os.LookupEnv("DOWNLOAD_DIR"); ok {
 		downloadDir = strings.TrimSpace(envDir)
 	}
+	if envDir, ok := os.LookupEnv("DATA_DIR"); ok {
+		dataDir = strings.TrimSpace(envDir)
+	}
 
 	return &Configs{
 		ServeConfig: &apis.ServeConfig{
@@ -50,5 +55,6 @@ func ReadConfigs() *Configs {
 		},
 		ReleaseSyncInterval: syncInterval,
 		DownloadDir:         downloadDir,
+		DataDir:             dataDir,
 	}
 }

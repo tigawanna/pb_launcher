@@ -2,11 +2,12 @@ package repos
 
 import (
 	"context"
-	"fmt"
+	"log"
 	"log/slog"
 	"pb_launcher/collections"
 	"pb_launcher/internal/launcher/domain/models"
 	"pb_launcher/internal/launcher/domain/repositories"
+	"regexp"
 	"time"
 
 	"github.com/pocketbase/dbx"
@@ -23,41 +24,80 @@ func NewServiceRepository(app *pocketbase.PocketBase) *ServiceRepository {
 	return &ServiceRepository{app: app}
 }
 
-// FindAll implements repositories.ServiceRepository.
-func (s *ServiceRepository) FindAll(ctx context.Context) ([]models.Service, error) {
-	services, err := s.app.FindAllRecords(collections.Services, dbx.NewExp("deleted_at IS NULL"))
+// Services implements repositories.ServiceRepository.
+func (s *ServiceRepository) Services(ctx context.Context) ([]models.Service, error) {
+	const qry = `
+		select 
+			s.id, 
+			s.status, 
+			s.restart_policy, 
+			r.version, 
+			r.repository, 
+			rpo.exec_file_pattern
+		from services s
+		inner join releases r on s."release" = r.id
+		inner join repositories rpo on rpo.id = r.repository
+	`
+
+	db := s.app.DB()
+
+	results := []dbx.NullStringMap{}
+	if err := db.NewQuery(qry).All(&results); err != nil {
+		log.Fatal(err)
+	}
+
+	services := make([]models.Service, 0, len(results))
+	for _, row := range results {
+		id, _ := row["id"]
+		status, _ := row["status"]
+		restartPolicy, _ := row["restart_policy"]
+		version, _ := row["version"]
+		repository, _ := row["repository"]
+		execPattern, _ := row["exec_file_pattern"]
+
+		ExecFilePattern, err := regexp.Compile(execPattern.String)
+		if err != nil {
+			slog.Warn("invalid exec file pattern", "error", err, "pattern", execPattern)
+			continue
+		}
+
+		services = append(services, models.Service{
+			ID:              id.String,
+			Status:          models.ServiceStatus(status.String),
+			RestartPolicy:   models.RestartPolicy(restartPolicy.String),
+			Version:         version.String,
+			RepositoryID:    repository.String,
+			ExecFilePattern: ExecFilePattern,
+		})
+	}
+
+	return services, nil
+}
+
+// RunningServices implements repositories.ServiceRepository.
+func (s *ServiceRepository) RunningServices(ctx context.Context) ([]models.Service, error) {
+	services, err := s.Services(ctx)
 	if err != nil {
-		slog.Error("failed to find all services", "error", err, "collection", collections.Services)
 		return nil, err
 	}
-	var results = make([]models.Service, 0, len(services))
-	for _, s := range services {
-		results = append(results, models.Service{
-			ID:            s.GetString("id"),
-			Status:        models.ServiceStatus(s.GetString("status")),
-			RestartPolicy: models.RestartPolicy(s.GetString("restart_policy")),
-		})
+	results := []models.Service{}
+	for _, service := range services {
+		if service.Status == models.Running {
+			results = append(results, service)
+		}
 	}
 	return results, nil
 }
 
 // SetServiceError implements repositories.ServiceRepository.
-func (s *ServiceRepository) SetServiceError(ctx context.Context, id string, status models.ServiceStatus, errorMessage string) error {
-	validErrorStatuses := map[models.ServiceStatus]bool{
-		models.StartFailed:    true,
-		models.UnexpectedExit: true,
-	}
-
-	if !validErrorStatuses[status] {
-		return fmt.Errorf("invalid service status for error: %s", status)
-	}
+func (s *ServiceRepository) SetServiceError(ctx context.Context, id string, errorMessage string) error {
 
 	record, err := s.app.FindRecordById(collections.Services, id)
 	if err != nil {
 		return err
 	}
 
-	record.Set("status", status)
+	record.Set("status", string(models.Stopped))
 	record.Set("error_message", errorMessage)
 
 	if err := s.app.Save(record); err != nil {
@@ -67,36 +107,19 @@ func (s *ServiceRepository) SetServiceError(ctx context.Context, id string, stat
 	return nil
 }
 
-func (s *ServiceRepository) UpdateServiceStatus(ctx context.Context, id string, status models.ServiceStatus) error {
-	validStatuses := map[models.ServiceStatus]bool{
-		models.Idle:           true,
-		models.Starting:       true,
-		models.Running:        true,
-		models.Stopping:       true,
-		models.Stopped:        true,
-		models.StartFailed:    true,
-		models.UnexpectedExit: true,
-	}
-
-	if !validStatuses[status] {
-		return fmt.Errorf("invalid service status: %s", status)
-	}
+// SetServiceRunning implements repositories.ServiceRepository.
+func (s *ServiceRepository) SetServiceRunning(ctx context.Context, id, listenIp, port string) error {
 
 	record, err := s.app.FindRecordById(collections.Services, id)
 	if err != nil {
 		return err
 	}
 
-	record.Set("status", status)
-
-	if status == models.Running {
-		record.Set("last_started_at", time.Now())
-		record.Set("error_message", nil)
-	}
-
-	if status == models.StartFailed || status == models.UnexpectedExit {
-		record.Set("last_started_at", nil)
-	}
+	record.Set("status", string(models.Running))
+	record.Set("last_started_at", time.Now())
+	record.Set("error_message", nil)
+	record.Set("ip", listenIp)
+	record.Set("port", port)
 
 	if err := s.app.Save(record); err != nil {
 		return err

@@ -6,7 +6,8 @@ import (
 )
 
 type ServiceRepository interface {
-	FindAll(ctx context.Context) ([]models.Service, error)
-	UpdateServiceStatus(ctx context.Context, id string, status models.ServiceStatus) error
-	SetServiceError(ctx context.Context, id string, status models.ServiceStatus, errorMessage string) error
+	Services(ctx context.Context) ([]models.Service, error)
+	RunningServices(ctx context.Context) ([]models.Service, error)
+	SetServiceError(ctx context.Context, id string, errorMessage string) error
+	SetServiceRunning(ctx context.Context, id string, listenIplistenIp, port string) error
 }

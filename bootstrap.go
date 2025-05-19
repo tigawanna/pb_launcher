@@ -8,6 +8,7 @@ import (
 	download "pb_launcher/internal/download/domain"
 	launcher "pb_launcher/internal/launcher/domain"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/pocketbase/pocketbase"
@@ -92,11 +93,18 @@ func Bootstrap(lc fx.Lifecycle,
 		},
 	})
 	// region Luncher
-
+	var recoveryDone atomic.Bool
 	var luncherRunner = taskrunner.NewTaskRunner(
 		func(ctx context.Context) {
 			mu.Lock()
 			defer mu.Unlock()
+			if !recoveryDone.Load() {
+				if err := luncherManager.Init(ctx); err != nil {
+					slog.Error("recovery process failed", "error", err, "task", "luncherRunner")
+					return
+				}
+				recoveryDone.Store(true)
+			}
 			if err := luncherManager.Run(ctx); err != nil {
 				slog.Error("service runner task failed",
 					"error", err,
@@ -122,7 +130,7 @@ func Bootstrap(lc fx.Lifecycle,
 			)
 
 			luncherRunner.Stop()
-			if err := luncherManager.Stop(ctx); err != nil {
+			if err := luncherManager.Stop(); err != nil {
 				slog.Error("failed to stop service runner",
 					"error", err,
 					"task", "luncherRunner",
