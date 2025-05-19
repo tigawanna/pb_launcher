@@ -9,9 +9,73 @@ import (
 
 func init() {
 	m.Register(func(app core.App) error {
+		repo := core.NewBaseCollection(collections.Repositories)
+		retentionMin := 1.0
+		retentionMax := 6.0
+		repo.Fields.Add(
+			&core.TextField{
+				Name:        "name",
+				Required:    true,
+				System:      true,
+				Presentable: true,
+			},
+			&core.TextField{
+				Name:     "repository",
+				System:   true,
+				Required: true,
+				Pattern:  `^.+\/.+$`,
+			},
+			&core.TextField{
+				Name:   "token",
+				System: true,
+			},
+			&core.NumberField{
+				Name:    "retention",
+				OnlyInt: true,
+				Min:     &retentionMin,
+				Max:     &retentionMax,
+			},
+			&core.TextField{
+				Name:     "release_file_pattern",
+				System:   true,
+				Required: true,
+			},
+			&core.TextField{
+				Name:     "exec_file_pattern",
+				System:   true,
+				Required: true,
+			},
+			&core.BoolField{
+				Name:   "disabled",
+				System: true,
+			},
+		)
+		if err := app.Save(repo); err != nil {
+			return err
+		}
+
+		// default repository
+		pb := core.NewRecord(repo)
+		pb.Set("id", "pb91u2l315h29a5")
+		pb.Set("name", "PocketBase")
+		pb.Set("retention", 3)
+		pb.Set("repository", "pocketbase/pocketbase")
+		pb.Set("release_file_pattern", `pocketbase_.+_linux_amd64\.zip`)
+		pb.Set("exec_file_pattern", `^pocketbase`)
+
+		if err := app.Save(pb); err != nil {
+			return err
+		}
+
 		releases := core.NewBaseCollection(collections.Releases)
 		releases.System = true
 		releases.Fields.Add(
+			&core.RelationField{
+				Name:         "repository",
+				System:       true,
+				CollectionId: repo.Id,
+				Presentable:  true,
+			},
 			&core.TextField{
 				Name:     "version",
 				Required: true,
@@ -33,6 +97,11 @@ func init() {
 				System:   true,
 				Required: true,
 			},
+			&core.TextField{
+				Name:     "asset_id",
+				System:   true,
+				Required: true,
+			},
 			&core.URLField{
 				Name:        "download_url",
 				System:      true,
@@ -46,7 +115,7 @@ func init() {
 		)
 		releases.Indexes = append(
 			releases.Indexes,
-			"CREATE UNIQUE INDEX idx_releases ON releases (version)",
+			"CREATE UNIQUE INDEX idx_releases ON releases (repository,version)",
 		)
 		return app.Save(releases)
 	}, nil)

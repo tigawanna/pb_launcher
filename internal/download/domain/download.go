@@ -2,6 +2,7 @@ package domain
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -13,15 +14,15 @@ import (
 
 type DownloadUsecase struct {
 	service         services.ReleaseVersionsService
-	repository      repositories.ReleaseVersionRepository
-	artifactStorage services.ArtifactStorage
+	repository      repositories.ReleaseRepository
+	artifactStorage services.RepositoryArtifactStorage
 	unzip           *unzip.Unzip
 }
 
 func NewDownloadUsecase(
 	service services.ReleaseVersionsService,
-	repository repositories.ReleaseVersionRepository,
-	artifactStorage services.ArtifactStorage,
+	repository repositories.ReleaseRepository,
+	artifactStorage services.RepositoryArtifactStorage,
 	unzip *unzip.Unzip,
 ) *DownloadUsecase {
 	return &DownloadUsecase{
@@ -57,10 +58,10 @@ func (uc *DownloadUsecase) DiffReleases(a []dtos.Release, b []dtos.Release) []dt
 	return diff
 }
 
-func (uc *DownloadUsecase) processDownload(ctx context.Context, release dtos.Release) error {
-	zipPath, err := uc.service.Download(ctx, release.DownloadURL)
+func (uc *DownloadUsecase) processDownload(ctx context.Context, repo dtos.Repository, release dtos.Release) error {
+	zipPath, err := uc.service.Download(ctx, repo, release.ReleaseAsset)
 	if err != nil {
-		slog.Error("failed to download release", "error", err, "url", release.DownloadURL)
+		slog.Error("failed to download release", "error", err)
 		return err
 	}
 	defer os.Remove(zipPath)
@@ -87,7 +88,7 @@ func (uc *DownloadUsecase) processDownload(ctx context.Context, release dtos.Rel
 		}
 		defer file.Close()
 		outFilePath := filepath.Join(release.Version.String(), relativePath)
-		if _, err := uc.artifactStorage.Save(ctx, outFilePath, file); err != nil {
+		if _, err := uc.artifactStorage.Save(ctx, release.RepositoryID, outFilePath, file); err != nil {
 			file.Close()
 			slog.Error("failed to save extracted file", "error", err, "path", relativePath)
 			return err
@@ -99,14 +100,14 @@ func (uc *DownloadUsecase) processDownload(ctx context.Context, release dtos.Rel
 	return nil
 }
 
-func (uc *DownloadUsecase) resolveMissingReleases(ctx context.Context) error {
-	releases, err := uc.repository.FindVersions(ctx)
+func (uc *DownloadUsecase) resolveMissingReleases(ctx context.Context, repo dtos.Repository) error {
+	releases, err := uc.repository.ListReleases(ctx, repo.ID)
 	if err != nil {
 		slog.Error("failed to retrieve available releases", "error", err)
 		return err
 	}
 
-	downloadedVersions, err := uc.artifactStorage.Versions(ctx)
+	downloadedVersions, err := uc.artifactStorage.Versions(ctx, repo.ID)
 	if err != nil {
 		slog.Error("failed to retrieve downloaded versions", "error", err)
 		return err
@@ -125,7 +126,7 @@ func (uc *DownloadUsecase) resolveMissingReleases(ctx context.Context) error {
 	}
 
 	for _, pending := range pendingDownloads {
-		if err := uc.processDownload(ctx, pending); err != nil {
+		if err := uc.processDownload(ctx, repo, pending); err != nil {
 			slog.Error("failed to process download", "version", pending.Version.String(), "error", err)
 			return err
 		}
@@ -135,28 +136,42 @@ func (uc *DownloadUsecase) resolveMissingReleases(ctx context.Context) error {
 }
 
 func (uc *DownloadUsecase) Run(ctx context.Context) error {
-	availableReleases, err := uc.service.FetchReleases(ctx)
+	repositories, err := uc.repository.ListRepositories(ctx)
 	if err != nil {
-		slog.Error("failed to fetch available releases", "error", err)
+		slog.Error("failed to list repositories", "error", err)
 		return err
 	}
+	var combinedErr error
+	for _, repo := range repositories {
 
-	existingReleases, err := uc.repository.FindVersions(ctx)
-	if err != nil {
-		slog.Error("failed to find existing releases", "error", err)
-		return err
+		availableReleases, err := uc.service.FetchReleases(ctx, repo)
+		if err != nil {
+			slog.Error("failed to fetch releases", "repository_id", repo.ID, "error", err)
+			combinedErr = errors.Join(combinedErr, err)
+			continue
+		}
+
+		existingReleases, err := uc.repository.ListReleases(ctx, repo.ID)
+		if err != nil {
+			slog.Error("failed to list existing releases", "repository_id", repo.ID, "error", err)
+			combinedErr = errors.Join(combinedErr, err)
+			continue
+		}
+
+		diff := uc.DiffReleases(availableReleases, existingReleases)
+		if len(diff) > 0 {
+			if err := uc.repository.SaveReleases(ctx, diff); err != nil {
+				slog.Error("failed to save new releases", "repository_id", repo.ID, "error", err)
+				combinedErr = errors.Join(combinedErr, err)
+				continue
+			}
+		}
+
+		if err := uc.resolveMissingReleases(ctx, repo); err != nil {
+			slog.Error("failed to resolve missing releases", "repository_id", repo.ID, "error", err)
+			combinedErr = errors.Join(combinedErr, err)
+			continue
+		}
 	}
-
-	diff := uc.DiffReleases(availableReleases, existingReleases)
-
-	if err := uc.repository.InsertVersions(ctx, diff); err != nil {
-		slog.Error("failed to insert new releases", "error", err)
-		return err
-	}
-
-	if err := uc.resolveMissingReleases(ctx); err != nil {
-		slog.Error("failed to resolve missing releases", "error", err)
-		return err
-	}
-	return nil
+	return combinedErr
 }

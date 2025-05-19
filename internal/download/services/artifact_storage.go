@@ -7,6 +7,7 @@ import (
 	"io"
 	"log/slog"
 	"os"
+	"path"
 	"path/filepath"
 	"pb_launcher/configs"
 	"pb_launcher/internal/download/domain/services"
@@ -16,20 +17,20 @@ import (
 	"github.com/wailsapp/mimetype"
 )
 
-type ArtifactStorage struct {
-	baseDir string
+type RepositoryArtifactStorage struct {
+	downloadDir string
 }
 
-var _ services.ArtifactStorage = (*ArtifactStorage)(nil)
+var _ services.RepositoryArtifactStorage = (*RepositoryArtifactStorage)(nil)
 
-func NewArtifactStorage(c *configs.Configs) *ArtifactStorage {
-	return &ArtifactStorage{
-		baseDir: c.DownloadDir,
+func NewRepositoryArtifactStorage(c *configs.Configs) *RepositoryArtifactStorage {
+	return &RepositoryArtifactStorage{
+		downloadDir: c.DownloadDir,
 	}
 }
 
-func (b *ArtifactStorage) cleanEmptyDirs() error {
-	entries, err := os.ReadDir(b.baseDir)
+func (b *RepositoryArtifactStorage) cleanEmptyDirs(targetpath string) error {
+	entries, err := os.ReadDir(targetpath)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			return nil
@@ -42,7 +43,7 @@ func (b *ArtifactStorage) cleanEmptyDirs() error {
 			continue
 		}
 
-		dirPath := filepath.Join(b.baseDir, entry.Name())
+		dirPath := filepath.Join(targetpath, entry.Name())
 		subEntries, err := os.ReadDir(dirPath)
 		if err != nil {
 			slog.Error("failed to read subdirectory", "dir", dirPath, "error", err)
@@ -59,18 +60,24 @@ func (b *ArtifactStorage) cleanEmptyDirs() error {
 	return nil
 }
 
-// Versions implements services.ArtifactStorage.
-func (b *ArtifactStorage) Versions(ctx context.Context) ([]*version.Version, error) {
-	if err := b.cleanEmptyDirs(); err != nil {
+func (b *RepositoryArtifactStorage) buildBaseDir(repositoryId string) string {
+	return path.Join(b.downloadDir, repositoryId)
+}
+
+// Versions implements services.RepositoryArtifactStorage.
+func (b *RepositoryArtifactStorage) Versions(ctx context.Context, repositoryId string) ([]*version.Version, error) {
+	baseDir := b.buildBaseDir(repositoryId)
+
+	if err := b.cleanEmptyDirs(baseDir); err != nil {
 		slog.Warn("failed to clean empty directories", "error", err)
 	}
 
-	entries, err := os.ReadDir(b.baseDir)
+	entries, err := os.ReadDir(baseDir)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			return nil, nil
 		}
-		slog.Error("failed to read base directory", "error", err, "baseDir", b.baseDir)
+		slog.Error("failed to read base directory", "error", err, "baseDir", baseDir)
 		return nil, fmt.Errorf("failed to read base directory: %w", err)
 	}
 
@@ -93,8 +100,10 @@ func (b *ArtifactStorage) Versions(ctx context.Context) ([]*version.Version, err
 
 // Save stores the provided binary data from the given reader at the specified relative path,
 // creating necessary directories and setting executable permissions for binary files.
-func (b *ArtifactStorage) Save(ctx context.Context, relativePath string, reader io.Reader) (string, error) {
-	binaryPath := filepath.Join(b.baseDir, relativePath)
+func (b *RepositoryArtifactStorage) Save(ctx context.Context, repositoryId string, relativePath string, reader io.Reader) (string, error) {
+	baseDir := b.buildBaseDir(repositoryId)
+
+	binaryPath := filepath.Join(baseDir, relativePath)
 
 	if err := os.MkdirAll(filepath.Dir(binaryPath), 0755); err != nil {
 		slog.Error("failed to create directory", "error", err, "path", filepath.Dir(binaryPath))

@@ -3,7 +3,6 @@ package configs
 import (
 	"log/slog"
 	"os"
-	"regexp"
 	"strings"
 	"time"
 
@@ -12,10 +11,8 @@ import (
 
 type Configs struct {
 	*apis.ServeConfig
-	ReleaseSyncInterval time.Duration  // default: 10m
-	GithubRepository    string         // default: pocketbase/pocketbase
-	ReleaseFilePattern  *regexp.Regexp // default: pocketbase_.+_linux_amd64\.zip
-	DownloadDir         string         // default: ./downloads
+	ReleaseSyncInterval time.Duration // default: 10m
+	DownloadDir         string        // default: ./downloads
 }
 
 func ReadConfigs() *Configs {
@@ -25,8 +22,6 @@ func ReadConfigs() *Configs {
 	}
 
 	syncInterval := 10 * time.Minute
-	repoName := "pocketbase/pocketbase"
-	rgxPattern := `pocketbase_.+_linux_amd64\.zip`
 	downloadDir := "./downloads"
 
 	const minSyncInterval = 5 * time.Minute
@@ -43,21 +38,9 @@ func ReadConfigs() *Configs {
 		}
 	}
 
-	if envRepo, ok := os.LookupEnv("GITHUB_REPOSITORY"); ok {
-		repoName = strings.Trim(strings.TrimSpace(envRepo), "/")
-	}
-
-	if envPattern, ok := os.LookupEnv("RELEASE_FILE_PATTERN"); ok {
-		if _, err := regexp.Compile(envPattern); err == nil {
-			rgxPattern = envPattern
-		}
-	}
-
 	if envDir, ok := os.LookupEnv("DOWNLOAD_DIR"); ok {
 		downloadDir = strings.TrimSpace(envDir)
 	}
-
-	compiledRgx, _ := regexp.Compile(rgxPattern)
 
 	return &Configs{
 		ServeConfig: &apis.ServeConfig{
@@ -66,8 +49,6 @@ func ReadConfigs() *Configs {
 			AllowedOrigins:  []string{"*"},
 		},
 		ReleaseSyncInterval: syncInterval,
-		GithubRepository:    repoName,
-		ReleaseFilePattern:  compiledRgx,
 		DownloadDir:         downloadDir,
 	}
 }

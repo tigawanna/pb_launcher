@@ -5,7 +5,8 @@ import (
 	"pb_launcher/internal/download/domain/dtos"
 )
 
-type ReleaseVersionRepository interface {
-	FindVersions(ctx context.Context) ([]dtos.Release, error)
-	InsertVersions(ctx context.Context, releases []dtos.Release) error
+type ReleaseRepository interface {
+	ListRepositories(ctx context.Context) ([]dtos.Repository, error)
+	ListReleases(ctx context.Context, repositoryID string) ([]dtos.Release, error)
+	SaveReleases(ctx context.Context, releases []dtos.Release) error
 }

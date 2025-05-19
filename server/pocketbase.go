@@ -17,6 +17,11 @@ func NewPocketbaseServer() *pocketbase.PocketBase {
 func StartPocketbase(lc fx.Lifecycle, pb *pocketbase.PocketBase, config *configs.Configs) {
 	lc.Append(fx.Hook{
 		OnStart: func(ctx context.Context) error {
+			doneChan := make(chan struct{})
+			pb.OnServe().BindFunc(func(e *core.ServeEvent) error {
+				doneChan <- struct{}{}
+				return e.Next()
+			})
 			go func() {
 				slog.Info("Starting API server", "address", config.HttpAddr)
 				if err := apis.Serve(pb.App, *config.ServeConfig); err != nil {
@@ -25,7 +30,7 @@ func StartPocketbase(lc fx.Lifecycle, pb *pocketbase.PocketBase, config *configs
 				}
 				slog.Info("API server stopped gracefully")
 			}()
-
+			<-doneChan
 			return nil
 		},
 		OnStop: func(ctx context.Context) error {

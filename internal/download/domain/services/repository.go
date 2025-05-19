@@ -6,6 +6,6 @@ import (
 )
 
 type ReleaseVersionsService interface {
-	FetchReleases(ctx context.Context) ([]dtos.Release, error)
-	Download(ctx context.Context, weburl string) (string, error)
+	FetchReleases(ctx context.Context, repo dtos.Repository) ([]dtos.Release, error)
+	Download(ctx context.Context, repo dtos.Repository, asset dtos.ReleaseAsset) (string, error)
 }

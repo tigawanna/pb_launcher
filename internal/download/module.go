@@ -17,8 +17,8 @@ import (
 var Module = fx.Module("download",
 	fx.Provide(
 		fx.Annotate(
-			repos.NewReleaseVersionRepository,
-			fx.As(new(repositories.ReleaseVersionRepository)),
+			repos.NewReleaseRepository,
+			fx.As(new(repositories.ReleaseRepository)),
 		),
 	),
 	fx.Provide(
@@ -29,15 +29,14 @@ var Module = fx.Module("download",
 	),
 	fx.Provide(
 		fx.Annotate(
-			infra_services.NewArtifactStorage,
-			fx.As(new(services.ArtifactStorage)),
+			infra_services.NewRepositoryArtifactStorage,
+			fx.As(new(services.RepositoryArtifactStorage)),
 		),
 	),
 	fx.Provide(domain.NewDownloadUsecase),
-	fx.Invoke(releaseSyncWorker),
 )
 
-func releaseSyncWorker(lc fx.Lifecycle, releaseUsecase *domain.DownloadUsecase, cfg *configs.Configs) {
+func DownloadReleaseSyncWorker(lc fx.Lifecycle, releaseUsecase *domain.DownloadUsecase, cfg *configs.Configs) {
 	var runner = taskrunner.NewTaskRunner(
 		func(ctx context.Context) {
 			if err := releaseUsecase.Run(ctx); err != nil {

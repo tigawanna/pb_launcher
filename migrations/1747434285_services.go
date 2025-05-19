@@ -9,6 +9,10 @@ import (
 
 func init() {
 	m.Register(func(app core.App) error {
+		releases, err := app.FindCollectionByNameOrId(collections.Releases)
+		if err != nil {
+			return err
+		}
 		services := core.NewBaseCollection(collections.Services)
 		services.Fields.Add(
 			&core.TextField{
@@ -18,7 +22,7 @@ func init() {
 			},
 			&core.RelationField{
 				Name:         "release",
-				CollectionId: collections.Releases,
+				CollectionId: releases.Id,
 				System:       true,
 				Required:     true,
 			},
@@ -35,9 +39,11 @@ func init() {
 				Name:   "status",
 				System: true,
 			},
-			&core.TextField{
-				Name:   "restart_policy",
-				System: true,
+			&core.SelectField{
+				Name:     "restart_policy",
+				System:   true,
+				Required: true,
+				Values:   []string{"no", "on-failure", "always"},
 			},
 			&core.TextField{
 				Name:   "error_message",

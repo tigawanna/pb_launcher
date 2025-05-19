@@ -1,8 +1,14 @@
 package launcher
 
 import (
+	"context"
+	"log/slog"
+	"pb_launcher/configs"
+	"pb_launcher/helpers/taskrunner"
+	"pb_launcher/internal/launcher/domain"
 	"pb_launcher/internal/launcher/domain/repositories"
 	"pb_launcher/internal/launcher/repos"
+	"time"
 
 	"go.uber.org/fx"
 )
@@ -19,26 +25,29 @@ var Module = fx.Module("launcher",
 	// fx.Invoke(releaseSyncWorker),
 )
 
-// func releaseSyncWorker(lc fx.Lifecycle, releaseUsecase *domain.DownloadUsecase, cfg *configs.Configs) {
-// 	var runner = taskrunner.NewTaskRunner(
-// 		func(ctx context.Context) {
-// 			if err := releaseUsecase.Run(ctx); err != nil {
-// 				slog.Error("error processing GitHub release sync task", "error", err)
-// 			}
-// 		},
-// 		cfg.ReleaseSyncInterval,
-// 	)
+func releaseSyncWorker(lc fx.Lifecycle, luncher *domain.LauncherManager, cfg *configs.Configs) {
+	var runner = taskrunner.NewTaskRunner(
+		func(ctx context.Context) {
+			if err := luncher.Run(ctx); err != nil {
+				slog.Error("error processing GitHub release sync task", "error", err)
+			}
+		},
+		10*time.Second,
+	)
 
-// 	lc.Append(fx.Hook{
-// 		OnStart: func(ctx context.Context) error {
-// 			slog.Info("starting GitHub release sync task runner", "interval", cfg.ReleaseSyncInterval)
-// 			runner.Start()
-// 			return nil
-// 		},
-// 		OnStop: func(ctx context.Context) error {
-// 			slog.Info("stopping GitHub release sync task runner")
-// 			runner.Stop()
-// 			return nil
-// 		},
-// 	})
-// }
+	lc.Append(fx.Hook{
+		OnStart: func(ctx context.Context) error {
+			slog.Info("starting GitHub release sync task runner", "interval", cfg.ReleaseSyncInterval)
+			runner.Start()
+			return nil
+		},
+		OnStop: func(ctx context.Context) error {
+			slog.Info("stopping GitHub release sync task runner")
+			runner.Stop()
+			if err := luncher.Stop(); err != nil {
+				//
+			}
+			return nil
+		},
+	})
+}

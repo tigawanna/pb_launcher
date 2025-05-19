@@ -7,10 +7,12 @@ import (
 	"github.com/hashicorp/go-version"
 )
 
-type ArtifactStorage interface {
-	// Versions returns a list of all available versions.
-	Versions(ctx context.Context) ([]*version.Version, error)
+type RepositoryArtifactStorage interface {
+	// Versions retrieves a list of all available versions for a given repository.
+	// It returns the versions found or an error if the operation fails.
+	Versions(ctx context.Context, repositoryId string) ([]*version.Version, error)
 
-	// Save stores the provided binary data at the specified relative path.
-	Save(ctx context.Context, relativePath string, reader io.Reader) (string, error)
+	// Save stores the provided binary data for a specific repository.
+	// The data is saved at the specified relative path, returning the full storage path or an error if the operation fails.
+	Save(ctx context.Context, repositoryId string, relativePath string, reader io.Reader) (string, error)
 }
