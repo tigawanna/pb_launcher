@@ -2,12 +2,14 @@ package repos
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"log/slog"
 	"pb_launcher/collections"
 	"pb_launcher/internal/launcher/domain/models"
 	"pb_launcher/internal/launcher/domain/repositories"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/pocketbase/dbx"
@@ -24,9 +26,8 @@ func NewServiceRepository(app *pocketbase.PocketBase) *ServiceRepository {
 	return &ServiceRepository{app: app}
 }
 
-// Services implements repositories.ServiceRepository.
-func (s *ServiceRepository) Services(ctx context.Context) ([]models.Service, error) {
-	const qry = `
+func (s *ServiceRepository) services(ctx context.Context, ids ...string) ([]models.Service, error) {
+	qry := `
 		select 
 			s.id, 
 			s.status, 
@@ -42,6 +43,17 @@ func (s *ServiceRepository) Services(ctx context.Context) ([]models.Service, err
 		inner join repositories rpo on rpo.id = r.repository
 		where s.deleted is null`
 
+	var quoted []string
+	for _, id := range ids {
+		id = strings.TrimSpace(id)
+		if id == "" {
+			continue
+		}
+		quoted = append(quoted, fmt.Sprintf("'%s'", id))
+	}
+	if len(quoted) > 0 {
+		qry += fmt.Sprintf(" and s.id in (%s)", strings.Join(quoted, ","))
+	}
 	db := s.app.DB()
 
 	results := []dbx.NullStringMap{}
@@ -83,6 +95,11 @@ func (s *ServiceRepository) Services(ctx context.Context) ([]models.Service, err
 	return services, nil
 }
 
+// Services implements repositories.ServiceRepository.
+func (s *ServiceRepository) Services(ctx context.Context) ([]models.Service, error) {
+	return s.services(ctx)
+}
+
 // RunningServices implements repositories.ServiceRepository.
 func (s *ServiceRepository) RunningServices(ctx context.Context) ([]models.Service, error) {
 	services, err := s.Services(ctx)
@@ -96,6 +113,18 @@ func (s *ServiceRepository) RunningServices(ctx context.Context) ([]models.Servi
 		}
 	}
 	return results, nil
+}
+
+// FindService implements repositories.ServiceRepository.
+func (s *ServiceRepository) FindService(ctx context.Context, id string) (*models.Service, error) {
+	services, err := s.services(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if len(services) == 0 {
+		return nil, fmt.Errorf("service not found: %s", id)
+	}
+	return &services[0], nil
 }
 
 // SetServiceError implements repositories.ServiceRepository.
