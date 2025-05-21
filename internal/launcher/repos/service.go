@@ -37,6 +37,7 @@ func (s *ServiceRepository) Services(ctx context.Context) ([]models.Service, err
 		from services s
 		inner join releases r on s."release" = r.id
 		inner join repositories rpo on rpo.id = r.repository
+		where s.deleted is null
 	`
 
 	db := s.app.DB()
@@ -116,7 +117,7 @@ func (s *ServiceRepository) SetServiceRunning(ctx context.Context, id, listenIp,
 	}
 
 	record.Set("status", string(models.Running))
-	record.Set("last_started_at", time.Now())
+	record.Set("last_started", time.Now())
 	record.Set("error_message", nil)
 	record.Set("ip", listenIp)
 	record.Set("port", port)

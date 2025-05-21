@@ -6,6 +6,7 @@ import (
 	"path"
 	"pb_launcher/configs"
 	"pb_launcher/helpers/unzip"
+	"pb_launcher/internal"
 	"pb_launcher/internal/download"
 	"pb_launcher/internal/launcher"
 	_ "pb_launcher/migrations"
@@ -42,6 +43,7 @@ func createRootCommand(app core.App) *cobra.Command {
 				fx.Supply(cnf, app),
 				download.Module,
 				launcher.Module,
+				internal.Module,
 				fx.Invoke(Bootstrap),
 			).Run()
 		},

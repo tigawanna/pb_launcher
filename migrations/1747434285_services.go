@@ -25,6 +25,16 @@ func init() {
 				CollectionId: releases.Id,
 				System:       true,
 				Required:     true,
+				MinSelect:    1,
+				MaxSelect:    1,
+			},
+			&core.EmailField{
+				Name:   "boot_user_email",
+				System: true,
+			},
+			&core.TextField{
+				Name:   "boot_user_password",
+				System: true,
 			},
 			&core.TextField{
 				Name:    "ip",
@@ -41,25 +51,25 @@ func init() {
 				Values: []string{"idle", "running", "stopped"},
 			},
 			&core.SelectField{
-				Name:     "restart_policy",
-				System:   true,
-				Required: true,
-				Values:   []string{"no", "on-failure"},
+				Name:   "restart_policy",
+				System: true,
+				Values: []string{"no", "on-failure"},
 			},
 			&core.TextField{
 				Name:   "error_message",
 				System: true,
 			},
 			&core.DateField{
-				Name:   "last_started_at",
+				Name:   "last_started",
 				System: true,
 			},
-			&core.DateField{
-				Name:   "created_at",
-				System: true,
+			&core.AutodateField{
+				Name:     "created",
+				OnCreate: true,
+				System:   true,
 			},
 			&core.DateField{
-				Name:   "deleted_at",
+				Name:   "deleted",
 				System: true,
 			},
 		)
