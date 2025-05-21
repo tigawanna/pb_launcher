@@ -52,4 +52,23 @@ func AddServiceHooks(app *pocketbase.PocketBase) {
 		e.Record = currentRecord
 		return e.Next()
 	})
+
+	app.OnRecordAfterCreateSuccess(collections.Services).BindFunc(func(e *core.RecordEvent) error {
+		comandCollection, err := e.App.FindCachedCollectionByNameOrId(collections.ServicesComands)
+		if err != nil {
+			return err
+		}
+		record := core.NewRecord(comandCollection)
+
+		record.Set("service", e.Record.Get("id"))
+		record.Set("action", "start")
+		record.Set("status", "pending")
+		record.Set("error_message", "")
+		record.Set("executed", nil)
+
+		if err := e.App.Save(record); err != nil {
+			return err
+		}
+		return e.Next()
+	})
 }

@@ -51,15 +51,16 @@ func init() {
 				Name:   "port",
 				System: true,
 			},
-			&core.SelectField{
-				Name:   "status",
-				System: true,
-				Values: []string{"idle", "running", "stopped"},
-			},
+
 			&core.SelectField{
 				Name:   "restart_policy",
 				System: true,
 				Values: []string{"no", "on-failure"},
+			},
+			&core.SelectField{
+				Name:   "status",
+				System: true,
+				Values: []string{"idle", "running", "stopped"},
 			},
 			&core.TextField{
 				Name:   "error_message",

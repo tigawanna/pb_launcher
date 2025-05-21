@@ -36,7 +36,7 @@ func (s *ServiceRepository) Services(ctx context.Context) ([]models.Service, err
 			rpo.exec_file_pattern,
 			s.boot_completed,
 			s.boot_user_email,
-			s.boot_user_password,
+			s.boot_user_password
 		from services s
 		inner join releases r on s."release" = r.id
 		inner join repositories rpo on rpo.id = r.repository
