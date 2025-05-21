@@ -19,6 +19,7 @@ func init() {
 				Name:        "name",
 				Presentable: true,
 				System:      true,
+				Required:    true,
 			},
 			&core.RelationField{
 				Name:         "release",
