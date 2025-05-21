@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net"
+	"os/exec"
 	"path"
 	"pb_launcher/configs"
 	"pb_launcher/helpers/process"
@@ -51,21 +52,55 @@ func (lm *LauncherManager) findFreePort() (string, error) {
 	return fmt.Sprintf("127.0.0.2:%d", addr.Port), nil
 }
 
-func (lm *LauncherManager) buildArgs(serviceID string) ([]string, string, error) {
-	freePort, err := lm.findFreePort()
-	if err != nil {
-		slog.Error("Failed to find free port for service", "serviceID", serviceID, "error", err)
-		return nil, "", err
-	}
+func (lm *LauncherManager) buildArgs(serviceID string) ([]string, error) {
 	pb_data := path.Join(lm.dataDir, serviceID)
-	var args = []string{"serve",
+	return []string{
 		"--dir", path.Join(pb_data, "pb_data"),
 		"--hooksDir", path.Join(pb_data, "hooks"),
 		"--publicDir", path.Join(pb_data, "public"),
 		"--migrationsDir", path.Join(pb_data, "migrations"),
-		"--http", freePort,
+	}, nil
+}
+
+// initializeBootUser sets up the initial boot user for the service instance.
+func (lm *LauncherManager) initializeBootUser(ctx context.Context,
+	service models.Service, binaryPath string, baseArgs []string) error {
+
+	if service.BootCompleted {
+		return nil
 	}
-	return args, freePort, nil
+
+	args := append(baseArgs, "superuser", "create", service.BootUserEmail, service.BootUserPassword)
+	cmd := exec.CommandContext(ctx, binaryPath, args...)
+
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		errorMessage := fmt.Sprintf("boot user :%s", err.Error())
+		if updateErr := lm.repository.SetServiceError(ctx, service.ID, errorMessage); updateErr != nil {
+			slog.Error("failed to update service error status",
+				"serviceID", service.ID,
+				"error", updateErr,
+				"originalError", errorMessage,
+			)
+		}
+		slog.Error("failed to initialize boot user",
+			"service", service.ID,
+			"email", service.BootUserEmail,
+			"output", string(output),
+			"error", err,
+		)
+		return err
+	}
+
+	if err := lm.repository.BootCompleted(ctx, service.ID); err != nil {
+		slog.Error("failed to update boot completed flag",
+			"service", service.ID,
+			"error", err,
+		)
+		return err
+	}
+
+	return nil
 }
 
 func (lm *LauncherManager) startService(ctx context.Context, service models.Service) (string, error) {
@@ -74,8 +109,13 @@ func (lm *LauncherManager) startService(ctx context.Context, service models.Serv
 		slog.Error("Failed to find binary", "serviceID", service.ID, "error", err)
 		return "", err
 	}
+	listenIp, err := lm.findFreePort()
+	if err != nil {
+		slog.Error("Failed to find free port for service", "serviceID", service.ID, "error", err)
+		return "", err
+	}
 
-	args, listenIp, err := lm.buildArgs(service.ID)
+	baseArgs, err := lm.buildArgs(service.ID)
 	if err != nil {
 		slog.Error("Failed to build arguments", "serviceID", service.ID, "error", err)
 		return "", err
@@ -92,10 +132,15 @@ func (lm *LauncherManager) startService(ctx context.Context, service models.Serv
 		delete(lm.processList, service.ID)
 	}
 
+	if err := lm.initializeBootUser(ctx, service, executablePath, baseArgs); err != nil {
+		return "", err
+	}
+
+	serveArgs := append([]string{"serve"}, append(baseArgs, "--http", listenIp)...)
 	newProcess := process.New(
 		service.ID,
 		executablePath,
-		args,
+		serveArgs,
 		process.WithErrorChan(lm.errChan),
 	)
 
@@ -109,7 +154,17 @@ func (lm *LauncherManager) startService(ctx context.Context, service models.Serv
 	return listenIp, err
 }
 
-func (lm *LauncherManager) Init(ctx context.Context) error {
+func (lm *LauncherManager) parseIPPort(addr string) (string, string, error) {
+	parts := strings.Split(addr, ":")
+	if len(parts) != 2 {
+		return "", "", fmt.Errorf("invalid address format: %s", addr)
+	}
+	return parts[0], parts[1], nil
+}
+
+// RecoveryLastState restores and starts all services that were active
+// before pb_launcher was shut down.
+func (lm *LauncherManager) RecoveryLastState(ctx context.Context) error {
 	lm.Lock()
 	defer lm.Unlock()
 	go lm.handleServiceErrors()
@@ -126,17 +181,17 @@ func (lm *LauncherManager) Init(ctx context.Context) error {
 				"serviceID", service.ID,
 				"error", err,
 			)
+
 			continue
 		}
-		vals := strings.Split(listenIp, ":")
-		if len(vals) != 2 {
+		ip, port, err := lm.parseIPPort(listenIp)
+		if err != nil {
 			slog.Error("invalid listenIp format, expected ip:port",
 				"listenIp", listenIp,
 				"serviceID", service.ID,
 			)
 			continue
 		}
-		ip, port := vals[0], vals[1]
 		if err := lm.repository.SetServiceRunning(ctx, service.ID, ip, port); err != nil {
 			slog.Error("failed to update service status to running",
 				"serviceID", service.ID,

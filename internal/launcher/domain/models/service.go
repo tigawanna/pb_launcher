@@ -24,4 +24,8 @@ type Service struct {
 	RepositoryID    string
 	Version         string
 	ExecFilePattern *regexp.Regexp
+	//
+	BootCompleted    bool
+	BootUserEmail    string
+	BootUserPassword string
 }

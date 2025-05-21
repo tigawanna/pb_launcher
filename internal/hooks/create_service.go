@@ -26,6 +26,7 @@ func AddServiceHooks(app *pocketbase.PocketBase) {
 				restart_policy = "no"
 			}
 
+			e.Record.Set("boot_completed", "no")
 			e.Record.Set("restart_policy", restart_policy)
 			e.Record.Set("boot_user_email", email)
 			e.Record.Set("boot_user_password", core.GenerateDefaultRandomId())
@@ -33,6 +34,7 @@ func AddServiceHooks(app *pocketbase.PocketBase) {
 
 			return e.Next()
 		})
+
 	app.OnRecordUpdateRequest(collections.Services).BindFunc(func(e *core.RecordRequestEvent) error {
 		updatedName := e.Record.GetString("name")
 		updatedPolicy := e.Record.Get("restart_policy")

@@ -33,12 +33,14 @@ func (s *ServiceRepository) Services(ctx context.Context) ([]models.Service, err
 			s.restart_policy, 
 			r.version, 
 			r.repository, 
-			rpo.exec_file_pattern
+			rpo.exec_file_pattern,
+			s.boot_completed,
+			s.boot_user_email,
+			s.boot_user_password,
 		from services s
 		inner join releases r on s."release" = r.id
 		inner join repositories rpo on rpo.id = r.repository
-		where s.deleted is null
-	`
+		where s.deleted is null`
 
 	db := s.app.DB()
 
@@ -55,6 +57,9 @@ func (s *ServiceRepository) Services(ctx context.Context) ([]models.Service, err
 		version, _ := row["version"]
 		repository, _ := row["repository"]
 		execPattern, _ := row["exec_file_pattern"]
+		bootCompleted, _ := row["boot_completed"]
+		bootUserEmail, _ := row["boot_user_email"]
+		bootUserPassword, _ := row["boot_user_password"]
 
 		ExecFilePattern, err := regexp.Compile(execPattern.String)
 		if err != nil {
@@ -63,12 +68,15 @@ func (s *ServiceRepository) Services(ctx context.Context) ([]models.Service, err
 		}
 
 		services = append(services, models.Service{
-			ID:              id.String,
-			Status:          models.ServiceStatus(status.String),
-			RestartPolicy:   models.RestartPolicy(restartPolicy.String),
-			Version:         version.String,
-			RepositoryID:    repository.String,
-			ExecFilePattern: ExecFilePattern,
+			ID:               id.String,
+			Status:           models.ServiceStatus(status.String),
+			RestartPolicy:    models.RestartPolicy(restartPolicy.String),
+			Version:          version.String,
+			RepositoryID:     repository.String,
+			ExecFilePattern:  ExecFilePattern,
+			BootUserEmail:    bootUserEmail.String,
+			BootUserPassword: bootUserPassword.String,
+			BootCompleted:    bootCompleted.String == "yes",
 		})
 	}
 
@@ -126,5 +134,18 @@ func (s *ServiceRepository) SetServiceRunning(ctx context.Context, id, listenIp,
 		return err
 	}
 
+	return nil
+}
+
+// BootCompleted implements repositories.ServiceRepository.
+func (s *ServiceRepository) BootCompleted(ctx context.Context, id string) error {
+	record, err := s.app.FindRecordById(collections.Services, id)
+	if err != nil {
+		return err
+	}
+	record.Set("boot_completed", "yes")
+	if err := s.app.Save(record); err != nil {
+		return err
+	}
 	return nil
 }

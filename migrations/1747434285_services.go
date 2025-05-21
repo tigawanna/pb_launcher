@@ -28,6 +28,12 @@ func init() {
 				MinSelect:    1,
 				MaxSelect:    1,
 			},
+			&core.SelectField{
+				Name:      "boot_completed",
+				System:    true,
+				Values:    []string{"no", "yes"},
+				MaxSelect: 1,
+			},
 			&core.EmailField{
 				Name:   "boot_user_email",
 				System: true,

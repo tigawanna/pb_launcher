@@ -99,7 +99,7 @@ func Bootstrap(lc fx.Lifecycle,
 			mu.Lock()
 			defer mu.Unlock()
 			if !recoveryDone.Load() {
-				if err := luncherManager.Init(ctx); err != nil {
+				if err := luncherManager.RecoveryLastState(ctx); err != nil {
 					slog.Error("recovery process failed", "error", err, "task", "luncherRunner")
 					return
 				}
