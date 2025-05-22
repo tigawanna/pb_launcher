@@ -16,6 +16,10 @@ var Module = fx.Module("launcher",
 			repos.NewServiceRepository,
 			fx.As(new(repositories.ServiceRepository)),
 		),
+		fx.Annotate(
+			repos.NewCommandsRepository,
+			fx.As(new(repositories.CommandsRepository)),
+		),
 	),
 	fx.Provide(
 		fx.Annotate(

@@ -130,7 +130,7 @@ func Bootstrap(lc fx.Lifecycle,
 			)
 
 			luncherRunner.Stop()
-			if err := luncherManager.Stop(); err != nil {
+			if err := luncherManager.Dispose(); err != nil {
 				slog.Error("failed to stop service runner",
 					"error", err,
 					"task", "luncherRunner",

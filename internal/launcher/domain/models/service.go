@@ -9,6 +9,7 @@ const (
 	Idle    ServiceStatus = "idle"    // Created but never started
 	Running ServiceStatus = "running" // Active and running
 	Stopped ServiceStatus = "stopped" // Stopped manually
+	Failure ServiceStatus = "failure" // Stopped manually
 )
 
 const (

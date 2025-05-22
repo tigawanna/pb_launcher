@@ -26,7 +26,7 @@ func NewServiceRepository(app *pocketbase.PocketBase) *ServiceRepository {
 	return &ServiceRepository{app: app}
 }
 
-func (s *ServiceRepository) services(ctx context.Context, ids ...string) ([]models.Service, error) {
+func (s *ServiceRepository) services(ids ...string) ([]models.Service, error) {
 	qry := `
 		select 
 			s.id, 
@@ -41,7 +41,7 @@ func (s *ServiceRepository) services(ctx context.Context, ids ...string) ([]mode
 		from services s
 		inner join releases r on s."release" = r.id
 		inner join repositories rpo on rpo.id = r.repository
-		where s.deleted is null`
+		where (s.deleted is null or s.deleted ='')`
 
 	var quoted []string
 	for _, id := range ids {
@@ -97,7 +97,7 @@ func (s *ServiceRepository) services(ctx context.Context, ids ...string) ([]mode
 
 // Services implements repositories.ServiceRepository.
 func (s *ServiceRepository) Services(ctx context.Context) ([]models.Service, error) {
-	return s.services(ctx)
+	return s.services()
 }
 
 // RunningServices implements repositories.ServiceRepository.
@@ -117,7 +117,7 @@ func (s *ServiceRepository) RunningServices(ctx context.Context) ([]models.Servi
 
 // FindService implements repositories.ServiceRepository.
 func (s *ServiceRepository) FindService(ctx context.Context, id string) (*models.Service, error) {
-	services, err := s.services(ctx, id)
+	services, err := s.services(id)
 	if err != nil {
 		return nil, err
 	}
@@ -127,8 +127,8 @@ func (s *ServiceRepository) FindService(ctx context.Context, id string) (*models
 	return &services[0], nil
 }
 
-// SetServiceError implements repositories.ServiceRepository.
-func (s *ServiceRepository) SetServiceError(ctx context.Context, id string, errorMessage string) error {
+// MarkServiceStoped implements repositories.ServiceRepository.
+func (s *ServiceRepository) MarkServiceStoped(ctx context.Context, id string) error {
 
 	record, err := s.app.FindRecordById(collections.Services, id)
 	if err != nil {
@@ -136,6 +136,24 @@ func (s *ServiceRepository) SetServiceError(ctx context.Context, id string, erro
 	}
 
 	record.Set("status", string(models.Stopped))
+	record.Set("error_message", nil)
+
+	if err := s.app.Save(record); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// MarkServiceFailure implements repositories.ServiceRepository.
+func (s *ServiceRepository) MarkServiceFailure(ctx context.Context, id string, errorMessage string) error {
+
+	record, err := s.app.FindRecordById(collections.Services, id)
+	if err != nil {
+		return err
+	}
+
+	record.Set("status", string(models.Failure))
 	record.Set("error_message", errorMessage)
 
 	if err := s.app.Save(record); err != nil {
@@ -145,8 +163,8 @@ func (s *ServiceRepository) SetServiceError(ctx context.Context, id string, erro
 	return nil
 }
 
-// SetServiceRunning implements repositories.ServiceRepository.
-func (s *ServiceRepository) SetServiceRunning(ctx context.Context, id, listenIp, port string) error {
+// MarkServiceRunning implements repositories.ServiceRepository.
+func (s *ServiceRepository) MarkServiceRunning(ctx context.Context, id, listenIp, port string) error {
 
 	record, err := s.app.FindRecordById(collections.Services, id)
 	if err != nil {

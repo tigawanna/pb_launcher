@@ -61,7 +61,7 @@ func init() {
 			&core.SelectField{
 				Name:   "status",
 				System: true,
-				Values: []string{"idle", "running", "stopped"},
+				Values: []string{"idle", "running", "stopped", "failure"},
 			},
 			&core.TextField{
 				Name:   "error_message",
