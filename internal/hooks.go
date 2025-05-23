@@ -8,4 +8,5 @@ import (
 
 var Module = fx.Module("hooks",
 	fx.Invoke(hooks.AddServiceHooks),
+	fx.Invoke(hooks.AddComandHooks),
 )
