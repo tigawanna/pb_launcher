@@ -1,5 +1,5 @@
 run:
-	@TZ=UTC go run *.go
+	@env $(shell grep -v '^#' .env | xargs) go run *.go
 	
 clean:
 	@rm -rf pb_data

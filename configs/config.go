@@ -1,6 +1,7 @@
 package configs
 
 import (
+	"errors"
 	"log/slog"
 	"os"
 	"strings"
@@ -14,9 +15,10 @@ type Configs struct {
 	ReleaseSyncInterval time.Duration // default: 10m
 	DownloadDir         string        // default: ./downloads
 	DataDir             string        // default: ./data
+	ApiDomain           string
 }
 
-func ReadConfigs() *Configs {
+func ReadConfigs() (*Configs, error) {
 	httpAddr, ok := os.LookupEnv("ADDRESS")
 	if !ok {
 		httpAddr = "0.0.0.0:7090"
@@ -47,6 +49,11 @@ func ReadConfigs() *Configs {
 		dataDir = strings.TrimSpace(envDir)
 	}
 
+	apiDomain, ok := os.LookupEnv("API_DOMAIN")
+	if !ok || strings.TrimSpace(apiDomain) == "" {
+		return nil, errors.New("missing required environment variable: API_DOMAIN")
+	}
+
 	return &Configs{
 		ServeConfig: &apis.ServeConfig{
 			ShowStartBanner: true,
@@ -56,5 +63,6 @@ func ReadConfigs() *Configs {
 		ReleaseSyncInterval: syncInterval,
 		DownloadDir:         downloadDir,
 		DataDir:             dataDir,
-	}
+		ApiDomain:           apiDomain,
+	}, nil
 }

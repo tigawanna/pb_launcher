@@ -37,10 +37,10 @@ func createRootCommand(app core.App) *cobra.Command {
 	return &cobra.Command{
 		Use: path.Base(os.Args[0]),
 		Run: func(cmd *cobra.Command, args []string) {
-			cnf := configs.ReadConfigs()
 			fx.New(
+				fx.Provide(configs.ReadConfigs),
 				fx.Provide(unzip.NewUnzip),
-				fx.Supply(cnf, app),
+				fx.Supply(app),
 				download.Module,
 				launcher.Module,
 				internal.Module,
