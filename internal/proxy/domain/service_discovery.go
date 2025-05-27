@@ -74,8 +74,9 @@ func (s *ServiceDiscovery) FindRunningServiceByID(ctx context.Context, id string
 
 func (s *ServiceDiscovery) InvalidateServiceByID(id string) error {
 	err := s.cache.Delete(id)
-	if err != nil {
+	if err != nil && !errors.Is(err, bigcache.ErrEntryNotFound) {
 		slog.Error("failed to invalidate cache", "id", id, "error", err)
+		return err
 	}
-	return err
+	return nil
 }

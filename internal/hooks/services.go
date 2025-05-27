@@ -3,13 +3,14 @@ package hooks
 import (
 	"errors"
 	"pb_launcher/collections"
+	"pb_launcher/internal/proxy/domain"
 	"slices"
 
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/core"
 )
 
-func AddServiceHooks(app *pocketbase.PocketBase) {
+func AddServiceHooks(app *pocketbase.PocketBase, discovery *domain.ServiceDiscovery) {
 	app.OnRecordCreateRequest(collections.Services).
 		BindFunc(func(e *core.RecordRequestEvent) error {
 			if e.Auth == nil {
@@ -69,6 +70,10 @@ func AddServiceHooks(app *pocketbase.PocketBase) {
 		if err := e.App.Save(record); err != nil {
 			return err
 		}
+		return e.Next()
+	})
+	app.OnRecordAfterUpdateSuccess(collections.Services).BindFunc(func(e *core.RecordEvent) error {
+		discovery.InvalidateServiceByID(e.Record.Id)
 		return e.Next()
 	})
 }
