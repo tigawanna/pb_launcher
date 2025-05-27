@@ -3,6 +3,7 @@ module pb_launcher
 go 1.23.4
 
 require (
+	github.com/allegro/bigcache/v3 v3.1.0
 	github.com/hashicorp/go-version v1.7.0
 	github.com/pocketbase/dbx v1.11.0
 	github.com/pocketbase/pocketbase v0.28.2

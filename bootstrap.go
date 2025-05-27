@@ -22,6 +22,7 @@ func Bootstrap(lc fx.Lifecycle,
 	downloader *download.DownloadUsecase,
 	luncherManager *launcher.LauncherManager,
 	config *configs.Configs,
+	pbConfig *apis.ServeConfig,
 ) {
 	var mu sync.Mutex
 	// region Server
@@ -35,8 +36,8 @@ func Bootstrap(lc fx.Lifecycle,
 				return e.Next()
 			})
 			go func() {
-				slog.Info("Starting API server", "address", config.HttpAddr)
-				if err := apis.Serve(pb.App, *config.ServeConfig); err != nil {
+				slog.Info("Starting API server", "address", pbConfig.HttpAddr)
+				if err := apis.Serve(pb.App, *pbConfig); err != nil {
 					slog.Error("API server encountered an error", "error", err)
 					return
 				}

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"net"
 	"os/exec"
 	"path"
 	"pb_launcher/configs"
@@ -13,12 +12,14 @@ import (
 	"pb_launcher/internal/launcher/domain/models"
 	"pb_launcher/internal/launcher/domain/repositories"
 	"pb_launcher/internal/launcher/domain/services"
+	"pb_launcher/utils/networktools"
 	"sync"
 )
 
 type LauncherManager struct {
 	sync.RWMutex
 	dataDir           string
+	ipAddress         string
 	repository        repositories.ServiceRepository
 	comandsRepository repositories.CommandsRepository
 	finder            services.BinaryFinder
@@ -38,6 +39,7 @@ func NewLauncherManager(
 		comandsRepository: comandsRepository,
 		finder:            finder,
 		dataDir:           c.DataDir,
+		ipAddress:         c.BindAddress,
 		processList:       make(map[string]*process.Process),
 		errChan:           make(chan process.ProcessErrorMessage, 10),
 	}
@@ -82,17 +84,6 @@ func (lm *LauncherManager) handleServiceErrors() {
 			)
 		}
 	}
-}
-
-func (lm *LauncherManager) findFreePort() (string, int, error) {
-	listener, err := net.Listen("tcp", "127.0.0.2:0")
-	if err != nil {
-		return "", 0, fmt.Errorf("failed to find free port: %w", err)
-	}
-	defer listener.Close()
-
-	addr := listener.Addr().(*net.TCPAddr)
-	return "127.0.0.2", addr.Port, nil
 }
 
 func (lm *LauncherManager) buildArgs(serviceID string) ([]string, error) {
@@ -158,7 +149,7 @@ func (lm *LauncherManager) startService(ctx context.Context, service models.Serv
 		slog.Error("failed to find binary", "serviceID", service.ID, "error", err)
 		return err
 	}
-	ip, port, err := lm.findFreePort()
+	ip, port, err := networktools.GetAvailablePort(lm.ipAddress)
 	if err != nil {
 		slog.Error("failed to find free port", "serviceID", service.ID, "error", err)
 		return err

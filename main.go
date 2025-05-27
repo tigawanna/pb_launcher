@@ -9,6 +9,7 @@ import (
 	"pb_launcher/internal"
 	"pb_launcher/internal/download"
 	"pb_launcher/internal/launcher"
+	"pb_launcher/internal/proxy"
 	_ "pb_launcher/migrations"
 
 	"github.com/pocketbase/pocketbase"
@@ -39,11 +40,13 @@ func createRootCommand(app core.App) *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			fx.New(
 				fx.Provide(configs.ReadConfigs),
+				fx.Provide(configs.NewPBServeConfig),
 				fx.Provide(unzip.NewUnzip),
 				fx.Supply(app),
 				download.Module,
 				launcher.Module,
-				internal.Module,
+				proxy.Module,
+				internal.Module, // hooks
 				fx.Invoke(Bootstrap),
 			).Run()
 		},
