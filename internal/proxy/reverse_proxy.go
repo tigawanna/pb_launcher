@@ -29,12 +29,12 @@ var _ http.Handler = (*DynamicReverseProxy)(nil)
 
 func NewDynamicReverseProxy(
 	discovery *domain.ServiceDiscovery,
-	conf *configs.Configs,
+	conf configs.Config,
 	pbConf *apis.ServeConfig,
 ) *DynamicReverseProxy {
 	return &DynamicReverseProxy{
 		discovery:  discovery,
-		apiDomain:  conf.PublicApiDomain,
+		apiDomain:  conf.GetPublicApiDomain(),
 		apiAddress: pbConf.HttpAddr,
 		timeout:    15 * time.Second,
 	}

@@ -7,7 +7,6 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
-	"pb_launcher/configs"
 	"pb_launcher/internal/download/domain/dtos"
 	"pb_launcher/internal/download/domain/services"
 	"regexp"
@@ -20,7 +19,7 @@ type ReleaseVersionsGithub struct{}
 
 var _ services.ReleaseVersionsService = (*ReleaseVersionsGithub)(nil)
 
-func NewReleaseVersionsGithub(c *configs.Configs) *ReleaseVersionsGithub {
+func NewReleaseVersionsGithub() *ReleaseVersionsGithub {
 	return &ReleaseVersionsGithub{}
 }
 

@@ -1,0 +1,13 @@
+# Server Binding
+bind_address: 127.0.0.1
+bind_port: "7080"
+
+# API
+public_api_domain: pb.labenv.test:7080
+
+# Synchronization
+release_sync_interval: 10m
+
+# Directories
+download_dir: ./downloads
+data_dir: ./data

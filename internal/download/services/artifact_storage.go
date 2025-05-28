@@ -23,9 +23,9 @@ type RepositoryArtifactStorage struct {
 
 var _ services.RepositoryArtifactStorage = (*RepositoryArtifactStorage)(nil)
 
-func NewRepositoryArtifactStorage(c *configs.Configs) *RepositoryArtifactStorage {
+func NewRepositoryArtifactStorage(c configs.Config) *RepositoryArtifactStorage {
 	return &RepositoryArtifactStorage{
-		downloadDir: c.DownloadDir,
+		downloadDir: c.GetDownloadDir(),
 	}
 }
 

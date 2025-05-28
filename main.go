@@ -35,11 +35,14 @@ func main() {
 }
 
 func createRootCommand(app core.App) *cobra.Command {
-	return &cobra.Command{
+	var configFile string
+	comand := &cobra.Command{
 		Use: path.Base(os.Args[0]),
 		Run: func(cmd *cobra.Command, args []string) {
 			fx.New(
-				fx.Provide(configs.ReadConfigs),
+				fx.Provide(func() (configs.Config, error) {
+					return configs.LoadConfigs(configFile)
+				}),
 				fx.Provide(configs.NewPBServeConfig),
 				fx.Provide(unzip.NewUnzip),
 				fx.Supply(app),
@@ -51,6 +54,8 @@ func createRootCommand(app core.App) *cobra.Command {
 			).Run()
 		},
 	}
+	comand.Flags().StringVarP(&configFile, "config", "c", "", "Path to the config file (yml)")
+	return comand
 }
 
 func buildUpgradeCommand(migrationsRunner *core.MigrationsRunner) *cobra.Command {

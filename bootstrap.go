@@ -21,7 +21,7 @@ func Bootstrap(lc fx.Lifecycle,
 	pb *pocketbase.PocketBase,
 	downloader *download.DownloadUsecase,
 	luncherManager *launcher.LauncherManager,
-	config *configs.Configs,
+	config configs.Config,
 	pbConfig *apis.ServeConfig,
 ) {
 	var mu sync.Mutex
@@ -78,12 +78,12 @@ func Bootstrap(lc fx.Lifecycle,
 				slog.Error("error processing GitHub release sync task", "error", err)
 			}
 		},
-		config.ReleaseSyncInterval,
+		config.GetReleaseSyncInterval(),
 	)
 
 	lc.Append(fx.Hook{
 		OnStart: func(ctx context.Context) error {
-			slog.Info("starting GitHub release sync task runner", "interval", config.ReleaseSyncInterval)
+			slog.Info("starting GitHub release sync task runner", "interval", config.GetReleaseSyncInterval())
 			downloaderRunner.Start()
 			return nil
 		},

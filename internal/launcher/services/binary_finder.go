@@ -16,9 +16,9 @@ type BinaryFinder struct {
 
 var _ services.BinaryFinder = (*BinaryFinder)(nil)
 
-func NewBinaryFinder(c *configs.Configs) *BinaryFinder {
+func NewBinaryFinder(c configs.Config) *BinaryFinder {
 	return &BinaryFinder{
-		targetDir: c.DownloadDir,
+		targetDir: c.GetDownloadDir(),
 	}
 }
 

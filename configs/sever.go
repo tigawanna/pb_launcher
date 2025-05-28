@@ -7,8 +7,8 @@ import (
 	"github.com/pocketbase/pocketbase/apis"
 )
 
-func NewPBServeConfig(c *Configs) (*apis.ServeConfig, error) {
-	ip, port, err := networktools.GetAvailablePort(c.BindAddress)
+func NewPBServeConfig(c Config) (*apis.ServeConfig, error) {
+	ip, port, err := networktools.GetAvailablePort(c.GetBindAddress())
 	if err != nil {
 		return nil, err
 	}

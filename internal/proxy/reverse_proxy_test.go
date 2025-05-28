@@ -4,11 +4,22 @@ import (
 	"pb_launcher/configs"
 	"testing"
 
+	"github.com/pocketbase/pocketbase/apis"
 	"github.com/stretchr/testify/assert"
 )
 
+type config struct {
+	configs.Config
+	domain string
+}
+
+func (c *config) GetPublicApiDomain() string { return c.domain }
+func mockConfig(domain string) configs.Config {
+	return &config{domain: domain}
+}
+
 func TestExtractServiceID(t *testing.T) {
-	rp := NewDynamicReverseProxy(nil, mockConfig("pb.labenv.test"), nil)
+	rp := NewDynamicReverseProxy(nil, mockConfig("pb.labenv.test"), &apis.ServeConfig{})
 
 	tests := []struct {
 		host      string
@@ -33,10 +44,5 @@ func TestExtractServiceID(t *testing.T) {
 			assert.NoError(t, err, "unexpected error for host: %s", tt.host)
 			assert.Equal(t, tt.expected, id, "incorrect service ID for host: %s", tt.host)
 		}
-	}
-}
-func mockConfig(domain string) *configs.Configs {
-	return &configs.Configs{
-		PublicApiDomain: domain,
 	}
 }

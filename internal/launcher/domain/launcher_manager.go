@@ -32,14 +32,14 @@ func NewLauncherManager(
 	repository repositories.ServiceRepository,
 	comandsRepository repositories.CommandsRepository,
 	finder services.BinaryFinder,
-	c *configs.Configs,
+	c configs.Config,
 ) *LauncherManager {
 	lm := &LauncherManager{
 		repository:        repository,
 		comandsRepository: comandsRepository,
 		finder:            finder,
-		dataDir:           c.DataDir,
-		ipAddress:         c.BindAddress,
+		dataDir:           c.GetDataDir(),
+		ipAddress:         c.GetBindAddress(),
 		processList:       make(map[string]*process.Process),
 		errChan:           make(chan process.ProcessErrorMessage, 10),
 	}
