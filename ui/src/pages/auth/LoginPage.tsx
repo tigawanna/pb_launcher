@@ -37,7 +37,6 @@ export const LoginPage = () => {
             <InputField
               label="Password"
               type="password"
-              placeholder="••••••••"
               registration={form.register("password")}
               autoComplete="off"
               error={form.formState.errors.password}

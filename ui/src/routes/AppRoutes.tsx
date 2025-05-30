@@ -63,7 +63,7 @@ export const AppRoutes = () => {
             path="/register"
             element={
               <PublicRoute>
-                <RegisterPage />
+                <RegisterPage refresh={adminExistsQuery.refetch}/>
               </PublicRoute>
             }
           />
