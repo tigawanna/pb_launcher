@@ -14,8 +14,9 @@ const DEFAULT_PHONE_ERROR = "Please enter a valid phone number";
 export const sanitizeString = (value: unknown) => {
   if (value == null) return null;
   if (typeof value !== "string") return value;
-  const cleaned = value.trim().replace(/\s+/g, " ");
-  return cleaned === "" ? null : cleaned;
+  const trimed = value.trim();
+  if (trimed === "") return null;
+  return trimed;
 };
 
 // Required string field
