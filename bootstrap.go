@@ -32,6 +32,7 @@ func Bootstrap(lc fx.Lifecycle,
 			defer mu.Unlock()
 			doneChan := make(chan struct{})
 			pb.OnServe().BindFunc(func(e *core.ServeEvent) error {
+				e.InstallerFunc = nil
 				close(doneChan)
 				return e.Next()
 			})

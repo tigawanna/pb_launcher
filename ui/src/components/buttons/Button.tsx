@@ -5,7 +5,12 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   label: string;
 }
 
-export const Button = ({ loading = false, label, disabled, ...props }: ButtonProps) => {
+export const Button = ({
+  loading = false,
+  label,
+  disabled,
+  ...props
+}: ButtonProps) => {
   return (
     <button
       {...props}

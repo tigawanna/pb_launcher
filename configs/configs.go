@@ -4,6 +4,7 @@ import (
 	"errors"
 	"log/slog"
 	"net"
+	"os"
 	"path"
 	"strconv"
 	"strings"
@@ -60,10 +61,15 @@ func (c *configs) GetDataDir() string {
 
 func (c *configs) GetPublicApiDomain() string {
 	if c.PublicApiDomain == "" {
-		return "pb.labenv.test:7080"
+		return "pb.labenv.test"
 	}
-	return c.PublicApiDomain
+	host, _, err := net.SplitHostPort(c.PublicApiDomain)
+	if err == nil {
+		return host
+	}
+	return strings.Split(c.PublicApiDomain, ":")[0]
 }
+
 func (c *configs) GetBindAddress() string {
 	if c.BindAddress == "" {
 		return "127.0.0.1"
@@ -83,12 +89,16 @@ func loadConfigFromFile(filePath string) (*configs, error) {
 	v.SetConfigFile(filePath)
 	v.SetConfigType("yaml")
 
+	var cfg configs
+
 	if err := v.ReadInConfig(); err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return &cfg, nil
+		}
 		slog.Error("failed to read config file", "file", path.Base(filePath), "error", err)
 		return nil, err
 	}
 
-	var cfg configs
 	if err := v.Unmarshal(&cfg); err != nil {
 		slog.Error("failed to unmarshal config", "file", path.Base(filePath), "error", err)
 		return nil, err

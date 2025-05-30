@@ -13,13 +13,23 @@ interface SelectFieldProps extends SelectHTMLAttributes<HTMLSelectElement> {
   registration: UseFormRegisterReturn;
 }
 
-export const SelectField = ({ label, options, error, registration, ...props }: SelectFieldProps) => {
+export const SelectField = ({
+  label,
+  options,
+  error,
+  registration,
+  ...props
+}: SelectFieldProps) => {
   return (
     <div className="flex flex-col space-y-1">
       <label className="font-medium">{label}</label>
-      <select {...registration} {...props} className="select select-bordered w-full">
+      <select
+        {...registration}
+        {...props}
+        className="select select-bordered w-full"
+      >
         <option value="">Selecciona una opción</option>
-        {options.map((option) => (
+        {options.map(option => (
           <option key={option.value} value={option.value}>
             {option.label}
           </option>

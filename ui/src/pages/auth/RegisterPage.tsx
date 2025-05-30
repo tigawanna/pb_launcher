@@ -7,23 +7,33 @@ import { useMutation } from "@tanstack/react-query";
 import { authService } from "../../services/auth";
 import toast from "react-hot-toast";
 import { getErrorMessage } from "../../utils/errors";
+import type { FC } from "react";
 
 const schema = object({
   email: emailRequired("Email is required"),
-  password: stringRequired("Password is required").min(8, "Password must be at least 8 characters long"),
-  confirmPassword: stringRequired("Please confirm your password").oneOf([ref("password")], "Passwords do not match"),
+  password: stringRequired("Password is required").min(
+    8,
+    "Password must be at least 8 characters long",
+  ),
+  confirmPassword: stringRequired("Please confirm your password").oneOf(
+    [ref("password")],
+    "Passwords do not match",
+  ),
 });
 
-export const RegisterPage = () => {
+export const RegisterPage: FC<{ refresh: () => void }> = ({ refresh }) => {
   const form = useCustomForm(schema);
 
   const mutation = useMutation({
     mutationFn: authService.setup,
-    onSuccess: () => window.location.replace("/login"),
-    onError: (error) => toast.error(getErrorMessage(error)),
+    onSuccess: () => {
+      toast.success("Setup completed successfully");
+      refresh();
+    },
+    onError: error => toast.error(getErrorMessage(error)),
   });
 
-  const onSubmit = form.handleSubmit((formData) => mutation.mutate(formData));
+  const onSubmit = form.handleSubmit(formData => mutation.mutate(formData));
 
   return (
     <div className="flex items-center justify-center min-h-screen px-4 bg-base-200">
@@ -41,7 +51,6 @@ export const RegisterPage = () => {
             <InputField
               label="Password"
               type="password"
-              placeholder="••••••••"
               registration={form.register("password")}
               autoComplete="off"
               error={form.formState.errors.password}
@@ -49,13 +58,16 @@ export const RegisterPage = () => {
             <InputField
               label="Confirm password"
               type="password"
-              placeholder="••••••••"
               registration={form.register("confirmPassword")}
               autoComplete="off"
               error={form.formState.errors.confirmPassword}
             />
             <div className="form-control mt-6">
-              <Button type="submit" label="Register" loading={mutation.isPending} />
+              <Button
+                type="submit"
+                label="Register"
+                loading={mutation.isPending}
+              />
             </div>
           </form>
         </div>

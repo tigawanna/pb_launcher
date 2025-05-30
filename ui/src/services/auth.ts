@@ -11,7 +11,11 @@ export const authService = {
     const json = await response.json();
 
     if (!response.ok) {
-      throw new HttpError(response.status, json?.message || "Unexpected error", json);
+      throw new HttpError(
+        response.status,
+        json?.message || "Unexpected error",
+        json,
+      );
     }
 
     if (json.message === "yes") return true;
@@ -31,7 +35,11 @@ export const authService = {
     });
     if (!response.ok) {
       const json = await response.json();
-      throw new HttpError(response.status, json?.message || "Unexpected error", json);
+      throw new HttpError(
+        response.status,
+        json?.message || "Unexpected error",
+        json,
+      );
     }
   },
 

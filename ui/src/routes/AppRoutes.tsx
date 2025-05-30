@@ -9,7 +9,10 @@ import { authService } from "../services/auth";
 
 import { QueryErrorView } from "../components/QueryErrorView";
 
-const PrivateRoute = ({ children, redirectTo }: PropsWithChildren<{ redirectTo: string }>) => {
+const PrivateRoute = ({
+  children,
+  redirectTo,
+}: PropsWithChildren<{ redirectTo: string }>) => {
   const { user } = useSession();
   return user ? children : <Navigate to={redirectTo} replace />;
 };
@@ -38,11 +41,19 @@ export const AppRoutes = () => {
   }
 
   if (adminExistsQuery.isError)
-    return <QueryErrorView error={adminExistsQuery.error} onRetry={adminExistsQuery.refetch} />;
+    return (
+      <QueryErrorView
+        error={adminExistsQuery.error}
+        onRetry={adminExistsQuery.refetch}
+      />
+    );
 
   if (adminExistsQuery.data == null) {
     return (
-      <QueryErrorView error={new Error("Unexpected empty response from server.")} onRetry={adminExistsQuery.refetch} />
+      <QueryErrorView
+        error={new Error("Unexpected empty response from server.")}
+        onRetry={adminExistsQuery.refetch}
+      />
     );
   }
   const isSetupDone = adminExistsQuery.data;
@@ -63,7 +74,7 @@ export const AppRoutes = () => {
             path="/register"
             element={
               <PublicRoute>
-                <RegisterPage />
+                <RegisterPage refresh={adminExistsQuery.refetch} />
               </PublicRoute>
             }
           />

@@ -21,5 +21,5 @@ createRoot(document.getElementById("root")!).render(
       </ConfirmModalProvider>
       <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>
-  </StrictMode>
+  </StrictMode>,
 );

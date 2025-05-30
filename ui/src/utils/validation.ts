@@ -25,7 +25,11 @@ export const stringRequired = (message = DEFAULT_REQUIRED_MESSAGE) =>
 
 // Required boolean field
 export const booleanRequired = (message = DEFAULT_REQUIRED_MESSAGE) =>
-  yup.boolean().transform(sanitizeString).typeError(DEFAULT_TYPE_BOOLEAN_ERROR).required(message);
+  yup
+    .boolean()
+    .transform(sanitizeString)
+    .typeError(DEFAULT_TYPE_BOOLEAN_ERROR)
+    .required(message);
 
 // Numeric string validation
 type NumericStringOptions = {
@@ -37,16 +41,22 @@ const numericString = (options?: NumericStringOptions) => {
   let schema = yup
     .string()
     .transform(sanitizeString)
-    .test("numeric-only", "Only numeric characters are allowed", (value) => {
+    .test("numeric-only", "Only numeric characters are allowed", value => {
       if (value == null || value === "") return true;
       return /^[0-9]+$/.test(value);
     });
 
   if (options?.minLength != null) {
-    schema = schema.min(options.minLength, `Minimum length is ${options.minLength} characters`);
+    schema = schema.min(
+      options.minLength,
+      `Minimum length is ${options.minLength} characters`,
+    );
   }
   if (options?.maxLength != null) {
-    schema = schema.max(options.maxLength, `Maximum length is ${options.maxLength} characters`);
+    schema = schema.max(
+      options.maxLength,
+      `Maximum length is ${options.maxLength} characters`,
+    );
   }
   return schema;
 };
@@ -58,20 +68,25 @@ export const numericStringNullable = (options?: NumericStringOptions) =>
   numericString(options).nullable().default(null);
 
 // Nullable string
-export const stringNullable = () => yup.string().transform(sanitizeString).nullable().default(null);
+export const stringNullable = () =>
+  yup.string().transform(sanitizeString).nullable().default(null);
 
 // Positive number validations
 export const positiveNumberNullable = () =>
   yup
     .number()
-    .transform((value) => (isNaN(value) ? 0 : value))
+    .transform(value => (isNaN(value) ? 0 : value))
     .typeError(DEFAULT_TYPE_NUMBER_ERROR)
     .min(0, DEFAULT_POSITIVE_NUMBER_ERROR)
     .nullable()
     .default(null);
 
 export const positiveNumberRequired = (message = DEFAULT_REQUIRED_MESSAGE) =>
-  yup.number().typeError(DEFAULT_TYPE_NUMBER_ERROR).positive(DEFAULT_POSITIVE_NUMBER_ERROR).required(message);
+  yup
+    .number()
+    .typeError(DEFAULT_TYPE_NUMBER_ERROR)
+    .positive(DEFAULT_POSITIVE_NUMBER_ERROR)
+    .required(message);
 
 // Email validations
 export const emailRequired = (message = DEFAULT_REQUIRED_EMAIL_ERROR) =>
@@ -81,7 +96,7 @@ export const emailNullable = (message = DEFAULT_EMAIL_ERROR) =>
   yup
     .string()
     .transform(sanitizeString)
-    .test("valid-email", message, (value) => {
+    .test("valid-email", message, value => {
       if (value == null || value === "") return true;
       return yup.string().email().isValidSync(value);
     })
@@ -89,23 +104,29 @@ export const emailNullable = (message = DEFAULT_EMAIL_ERROR) =>
     .default(null);
 
 // Regex-matching strings
-export const stringNullableMatching = (pattern: RegExp, message = DEFAULT_REGEX_ERROR) =>
+export const stringNullableMatching = (
+  pattern: RegExp,
+  message = DEFAULT_REGEX_ERROR,
+) =>
   yup
     .string()
     .transform(sanitizeString)
-    .test("match-pattern", message, (value) => {
+    .test("match-pattern", message, value => {
       if (value == null || value === "") return true;
       return pattern.test(value);
     })
     .nullable()
     .default(null);
 
-export const stringRequiredMatching = (pattern: RegExp, message = DEFAULT_REGEX_ERROR) =>
+export const stringRequiredMatching = (
+  pattern: RegExp,
+  message = DEFAULT_REGEX_ERROR,
+) =>
   yup
     .string()
     .transform(sanitizeString)
     .trim()
-    .test("match-pattern", message, (value) => {
+    .test("match-pattern", message, value => {
       if (value == null || value === "") return true;
       return pattern.test(value);
     })
@@ -126,7 +147,7 @@ export const phoneNullable = (message = DEFAULT_PHONE_ERROR) =>
   yup
     .string()
     .transform(transformPhoneNumber)
-    .test("valid-phone", message, (value) => {
+    .test("valid-phone", message, value => {
       if (value == null || value === "") return true;
       return PERU_PHONE_REGEX.test(value);
     })
@@ -137,7 +158,7 @@ export const phoneRequired = (message = DEFAULT_PHONE_ERROR) =>
   yup
     .string()
     .transform(transformPhoneNumber)
-    .test("valid-phone", message, (value) => {
+    .test("valid-phone", message, value => {
       if (value == null || value === "") return true;
       return PERU_PHONE_REGEX.test(value);
     })
@@ -155,7 +176,10 @@ export const passwordRequired = (message = "Password is required") =>
     .required(message);
 
 // Enum validation (string)
-export const stringEnumRequired = (values: string[], message = DEFAULT_REQUIRED_MESSAGE) =>
+export const stringEnumRequired = (
+  values: string[],
+  message = DEFAULT_REQUIRED_MESSAGE,
+) =>
   yup
     .string()
     .oneOf(values, `Value must be one of: ${values.join(", ")}`)
@@ -165,13 +189,16 @@ export const stringEnumRequired = (values: string[], message = DEFAULT_REQUIRED_
 export const dateRequired = (message = "Date is required") =>
   yup.date().typeError("Invalid date format").required(message);
 
-export const dateNullable = () => yup.date().typeError("Invalid date format").nullable().default(null);
+export const dateNullable = () =>
+  yup.date().typeError("Invalid date format").nullable().default(null);
 
 // Convert numeric string to number
 export const numericStringToNumber = () =>
   yup
     .string()
-    .transform((value) => (value == null || value === "" ? null : parseFloat(value)))
+    .transform(value =>
+      value == null || value === "" ? null : parseFloat(value),
+    )
     .typeError("Must be a valid number")
     .nullable()
     .default(null);

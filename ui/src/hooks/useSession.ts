@@ -8,7 +8,9 @@ export function useSession() {
   });
 
   useEffect(() => {
-    const unsubscribe = pb.authStore.onChange(() => setUser(pb.authStore.record));
+    const unsubscribe = pb.authStore.onChange(() =>
+      setUser(pb.authStore.record),
+    );
     setUser(pb.authStore.record);
     return () => unsubscribe();
   }, []);

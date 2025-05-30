@@ -1,4 +1,7 @@
-import type { InputHTMLAttributes, HTMLInputAutoCompleteAttribute } from "react";
+import type {
+  InputHTMLAttributes,
+  HTMLInputAutoCompleteAttribute,
+} from "react";
 import type { FieldError, UseFormRegisterReturn } from "react-hook-form";
 
 interface InputFieldProps extends InputHTMLAttributes<HTMLInputElement> {
@@ -9,7 +12,14 @@ interface InputFieldProps extends InputHTMLAttributes<HTMLInputElement> {
   autoComplete?: HTMLInputAutoCompleteAttribute;
 }
 
-export const InputField = ({ label, error, registration, placeholder, autoComplete, ...props }: InputFieldProps) => {
+export const InputField = ({
+  label,
+  error,
+  registration,
+  placeholder,
+  autoComplete,
+  ...props
+}: InputFieldProps) => {
   return (
     <div className="form-control w-full">
       <label className="label">

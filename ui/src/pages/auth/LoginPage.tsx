@@ -10,17 +10,20 @@ import { getErrorMessage } from "../../utils/errors";
 
 const schema = object({
   email: emailRequired("Email is required"),
-  password: stringRequired("Password is required").min(8, "Password must be at least 8 characters long"),
+  password: stringRequired("Password is required").min(
+    8,
+    "Password must be at least 8 characters long",
+  ),
 });
 
 export const LoginPage = () => {
   const form = useCustomForm(schema);
   const mutation = useMutation({
     mutationFn: authService.login,
-    onError: (error) => toast.error(getErrorMessage(error)),
+    onError: error => toast.error(getErrorMessage(error)),
   });
 
-  const onSubmit = form.handleSubmit((formData) => mutation.mutate(formData));
+  const onSubmit = form.handleSubmit(formData => mutation.mutate(formData));
 
   return (
     <div className="flex items-center justify-center min-h-screen px-4 bg-base-200">
@@ -37,13 +40,16 @@ export const LoginPage = () => {
             <InputField
               label="Password"
               type="password"
-              placeholder="••••••••"
               registration={form.register("password")}
               autoComplete="off"
               error={form.formState.errors.password}
             />
             <div className="form-control mt-6">
-              <Button type="submit" label="Sign in" loading={mutation.isPending} />
+              <Button
+                type="submit"
+                label="Sign in"
+                loading={mutation.isPending}
+              />
             </div>
           </form>
         </div>

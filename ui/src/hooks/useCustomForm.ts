@@ -6,16 +6,21 @@ import type { ObjectSchema, InferType } from "yup";
 export const useCustomForm = <TSchema extends ObjectSchema<any>>(
   schema: TSchema,
   props?: {
-    defaultValues?: DefaultValues<InferType<TSchema>> | (() => Promise<DefaultValues<InferType<TSchema>>>);
-  }
+    defaultValues?:
+      | DefaultValues<InferType<TSchema>>
+      | (() => Promise<DefaultValues<InferType<TSchema>>>);
+  },
 ) => {
   const form = useForm<InferType<TSchema>>({
     resolver: yupResolver(schema),
     defaultValues: props?.defaultValues,
   });
 
-  const wrappedHandleSubmit: typeof form.handleSubmit = (onValid, onInvalid) => {
-    return form.handleSubmit(onValid, (errors) => {
+  const wrappedHandleSubmit: typeof form.handleSubmit = (
+    onValid,
+    onInvalid,
+  ) => {
+    return form.handleSubmit(onValid, errors => {
       if (!process.env.NODE_ENV || process.env.NODE_ENV === "development") {
         console.error("Validation Errors:", errors);
       }
