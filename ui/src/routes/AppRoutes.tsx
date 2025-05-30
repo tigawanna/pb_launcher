@@ -3,11 +3,12 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { LoginPage } from "../pages/auth/LoginPage";
 import { RegisterPage } from "../pages/auth/RegisterPage";
 import { useSession } from "../hooks/useSession";
-import { DashboardPage } from "../pages/DashboardPage";
 import { useQuery } from "@tanstack/react-query";
 import { authService } from "../services/auth";
 
 import { QueryErrorView } from "../components/QueryErrorView";
+import { DashboardLayout } from "../layouts/DashboardLayout";
+import { ServicesPage } from "../pages/internal/ServicesPage";
 
 const PrivateRoute = ({
   children,
@@ -80,13 +81,15 @@ export const AppRoutes = () => {
           />
         )}
         <Route
-          path="*"
+          path="/"
           element={
             <PrivateRoute redirectTo={isSetupDone ? "/login" : "/register"}>
-              <DashboardPage />
+              <DashboardLayout />
             </PrivateRoute>
           }
-        />
+        >
+          <Route index element={<ServicesPage />} />
+        </Route>
       </Routes>
     </BrowserRouter>
   );
