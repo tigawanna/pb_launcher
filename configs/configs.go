@@ -4,6 +4,7 @@ import (
 	"errors"
 	"log/slog"
 	"net"
+	"os"
 	"path"
 	"strconv"
 	"strings"
@@ -83,12 +84,16 @@ func loadConfigFromFile(filePath string) (*configs, error) {
 	v.SetConfigFile(filePath)
 	v.SetConfigType("yaml")
 
+	var cfg configs
+
 	if err := v.ReadInConfig(); err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return &cfg, nil
+		}
 		slog.Error("failed to read config file", "file", path.Base(filePath), "error", err)
 		return nil, err
 	}
 
-	var cfg configs
 	if err := v.Unmarshal(&cfg); err != nil {
 		slog.Error("failed to unmarshal config", "file", path.Base(filePath), "error", err)
 		return nil, err
