@@ -10,7 +10,7 @@ import { getErrorMessage } from "../../utils/errors";
 
 const schema = object({
   email: emailRequired("Email is required"),
-  password: stringRequired("Password is required").min(6, "Password must be at least 6 characters long"),
+  password: stringRequired("Password is required").min(8, "Password must be at least 8 characters long"),
   confirmPassword: stringRequired("Please confirm your password").oneOf([ref("password")], "Passwords do not match"),
 });
 
