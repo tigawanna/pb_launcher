@@ -98,8 +98,12 @@ func (rp *DynamicReverseProxy) buildReverseProxy(target *url.URL) *httputil.Reve
 func (rp *DynamicReverseProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), rp.timeout)
 	defer cancel()
-
-	target, err := rp.resolveServiceTarget(ctx, r.Host)
+	host, _, err := net.SplitHostPort(r.Host)
+	if err != nil {
+		slog.Warn("invalid host format, using raw host", "host", r.Host, "error", err)
+		host = r.Host
+	}
+	target, err := rp.resolveServiceTarget(ctx, host)
 	if err != nil {
 		slog.Warn("target resolution failed", "host", r.Host, "error", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)

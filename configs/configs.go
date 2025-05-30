@@ -61,10 +61,15 @@ func (c *configs) GetDataDir() string {
 
 func (c *configs) GetPublicApiDomain() string {
 	if c.PublicApiDomain == "" {
-		return "pb.labenv.test:7080"
+		return "pb.labenv.test"
 	}
-	return c.PublicApiDomain
+	host, _, err := net.SplitHostPort(c.PublicApiDomain)
+	if err == nil {
+		return host
+	}
+	return strings.Split(c.PublicApiDomain, ":")[0]
 }
+
 func (c *configs) GetBindAddress() string {
 	if c.BindAddress == "" {
 		return "127.0.0.1"

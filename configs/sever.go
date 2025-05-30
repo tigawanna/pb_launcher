@@ -13,7 +13,7 @@ func NewPBServeConfig(c Config) (*apis.ServeConfig, error) {
 		return nil, err
 	}
 	return &apis.ServeConfig{
-		ShowStartBanner: true,
+		ShowStartBanner: false,
 		HttpAddr:        fmt.Sprintf("%s:%d", ip, port),
 		AllowedOrigins:  []string{"*"},
 	}, nil
