@@ -1,5 +1,5 @@
-import { object, ref } from "yup";
-import { emailRequired, stringRequired } from "../../utils/validation";
+import { object, ref, string as yupString } from "yup";
+import { emailRequired } from "../../utils/validation";
 import { useCustomForm } from "../../hooks/useCustomForm";
 import { InputField } from "../../components/fields/InputField";
 import { Button } from "../../components/buttons/Button";
@@ -11,14 +11,13 @@ import type { FC } from "react";
 
 const schema = object({
   email: emailRequired("Email is required"),
-  password: stringRequired("Password is required").min(
-    8,
-    "Password must be at least 8 characters long",
-  ),
-  confirmPassword: stringRequired("Please confirm your password").oneOf(
-    [ref("password")],
-    "Passwords do not match",
-  ),
+  password: yupString()
+    .required("Password is required")
+    .min(8, "Password must be at least 8 characters long"),
+
+  confirmPassword: yupString()
+    .required("Please confirm your password")
+    .oneOf([ref("password")], "Passwords do not match"),
 });
 
 export const RegisterPage: FC<{ refresh: () => void }> = ({ refresh }) => {
