@@ -15,14 +15,14 @@ const queryClient = new QueryClient({
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <ModalProvider>
-      <Toaster reverseOrder={false} />
-      <QueryClientProvider client={queryClient}>
+    <Toaster reverseOrder={false} />
+    <QueryClientProvider client={queryClient}>
+      <ModalProvider>
         <ConfirmModalProvider>
           <AppRoutes />
         </ConfirmModalProvider>
         <ReactQueryDevtools initialIsOpen={false} />
-      </QueryClientProvider>
-    </ModalProvider>
+      </ModalProvider>
+    </QueryClientProvider>
   </StrictMode>,
 );

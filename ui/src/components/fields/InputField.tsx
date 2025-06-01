@@ -30,14 +30,14 @@ export const InputField = ({
         {...props}
         autoComplete={autoComplete ?? "off"}
         placeholder={placeholder}
-        className={`input input-bordered w-full transition-all duration-150 focus:outline-none focus:ring-1 focus:ring-primary ${
+        className={`input input-md input-bordered w-full transition-all duration-150 focus:outline-none focus:ring-1 focus:ring-primary ${
           error ? "input-error" : ""
         }`}
       />
       {error && (
-        <label className="label">
-          <span className="label-text-alt text-error">{error.message}</span>
-        </label>
+        <span className="label-text-alt text-xs text-error">
+          {error.message}
+        </span>
       )}
     </div>
   );

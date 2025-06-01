@@ -7,6 +7,8 @@ import {
   Pencil,
   Power,
 } from "lucide-react";
+import { useModal } from "../../components/modal/hook";
+import { ServiceForm } from "./forms/ServiceForm";
 
 type Service = {
   id: string;
@@ -105,7 +107,10 @@ export const ServicesPage = () => {
   const handleDelete = (id: string) => {
     setServices(prev => prev.filter(s => s.id !== id));
   };
-
+  //
+  const { openModal } = useModal();
+  const handleCreate = () =>
+    openModal(<ServiceForm />, { title: "Create Service" });
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -132,7 +137,10 @@ export const ServicesPage = () => {
             <option value="running">Running</option>
             <option value="stopped">Stopped</option>
           </select>
-          <button className="btn btn-sm btn-primary gap-2 w-full sm:w-auto">
+          <button
+            className="btn btn-sm btn-primary gap-2 w-full sm:w-auto"
+            onClick={handleCreate}
+          >
             <Plus className="w-4 h-4" />
             New instance
           </button>

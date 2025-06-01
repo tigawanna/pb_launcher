@@ -81,7 +81,7 @@ export const AppRoutes = () => {
           />
         )}
         <Route
-          path="/"
+          path="*"
           element={
             <PrivateRoute redirectTo={isSetupDone ? "/login" : "/register"}>
               <DashboardLayout />

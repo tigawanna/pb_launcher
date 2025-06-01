@@ -2,6 +2,7 @@ package migrations
 
 import (
 	"pb_launcher/collections"
+	"pb_launcher/utils"
 
 	"github.com/pocketbase/pocketbase/core"
 	m "github.com/pocketbase/pocketbase/migrations"
@@ -50,6 +51,10 @@ func init() {
 				System: true,
 			},
 		)
+
+		repo.ListRule = utils.StrPointer(`@request.auth.id != ""`)
+		repo.ViewRule = utils.StrPointer(`@request.auth.id != ""`)
+
 		if err := app.Save(repo); err != nil {
 			return err
 		}
@@ -68,7 +73,6 @@ func init() {
 		}
 
 		releases := core.NewBaseCollection(collections.Releases)
-		releases.System = true
 		releases.Fields.Add(
 			&core.RelationField{
 				Name:         "repository",
@@ -116,10 +120,14 @@ func init() {
 				System: true,
 			},
 		)
+
 		releases.Indexes = append(
 			releases.Indexes,
 			"CREATE UNIQUE INDEX idx_releases ON releases (repository,version)",
 		)
+
+		releases.ListRule = utils.StrPointer(`@request.auth.id != ""`)
+		releases.ViewRule = utils.StrPointer(`@request.auth.id != ""`)
 		return app.Save(releases)
 	}, nil)
 }
