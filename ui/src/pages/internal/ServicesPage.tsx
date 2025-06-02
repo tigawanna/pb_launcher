@@ -46,7 +46,7 @@ export const ServicesPage = () => {
 
   const deleteMutation = useMutation({
     mutationFn: releaseService.deleteServiceInstance,
-    onSuccess: () => servicesQuery.refetch(),
+    onSuccess: () => setTimeout(() => servicesQuery.refetch()),
     onError: error => toast.error(getErrorMessage(error)),
   });
 
@@ -62,7 +62,9 @@ export const ServicesPage = () => {
 
   const openCreateServiceModal = () => {
     openModal(
-      <ServiceForm onSaveRecord={() => setTimeout(servicesQuery.refetch)} />,
+      <ServiceForm
+        onSaveRecord={() => setTimeout(() => servicesQuery.refetch())}
+      />,
       {
         title: "Create Service",
       },
@@ -73,7 +75,7 @@ export const ServicesPage = () => {
     openModal(
       <ServiceForm
         record={service}
-        onSaveRecord={() => setTimeout(servicesQuery.refetch)}
+        onSaveRecord={() => setTimeout(() => servicesQuery.refetch())}
       />,
       {
         title: "Edit Service",
