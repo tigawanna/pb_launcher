@@ -114,7 +114,7 @@ func Bootstrap(lc fx.Lifecycle,
 				)
 			}
 		},
-		10*time.Second,
+		config.GetCommandCheckInterval(),
 	)
 
 	lc.Append(fx.Hook{

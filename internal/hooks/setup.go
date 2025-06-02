@@ -5,13 +5,14 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"pb_launcher/configs"
 
 	"github.com/pocketbase/dbx"
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/core"
 )
 
-func RegisterAdminExistsRoute(app *pocketbase.PocketBase) {
+func RegisterAdminExistsRoute(app *pocketbase.PocketBase, c configs.Config) {
 	app.OnServe().BindFunc(func(se *core.ServeEvent) error {
 		se.Router.GET("/x-api/setup/admin-exists", func(e *core.RequestEvent) error {
 			total, err := app.CountRecords(core.CollectionNameSuperusers, dbx.Not(dbx.HashExp{
@@ -71,7 +72,6 @@ func RegisterAdminExistsRoute(app *pocketbase.PocketBase) {
 			}
 			return e.NoContent(http.StatusOK)
 		})
-
 		return se.Next()
 	})
 }

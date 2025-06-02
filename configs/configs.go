@@ -15,6 +15,8 @@ import (
 
 type Config interface {
 	GetReleaseSyncInterval() time.Duration
+	GetCommandCheckInterval() time.Duration
+
 	GetDownloadDir() string
 	GetDataDir() string
 	GetPublicApiDomain() string
@@ -23,28 +25,42 @@ type Config interface {
 }
 
 type configs struct {
-	ReleaseSyncInterval string `mapstructure:"release_sync_interval"` // default: 10m
-	DownloadDir         string `mapstructure:"download_dir"`          // default: ./downloads
-	DataDir             string `mapstructure:"data_dir"`              // default: ./data
-	PublicApiDomain     string `mapstructure:"public_api_domain"`
-	BindAddress         string `mapstructure:"bind_address"` // default: 127.0.0.1
-	BindPort            string `mapstructure:"bind_port"`    // default: 8072
+	ReleaseSyncInterval  string `mapstructure:"release_sync_interval"`  // default: 10m
+	CommandCheckInterval string `mapstructure:"command_check_interval"` // default: 10ms
+	DownloadDir          string `mapstructure:"download_dir"`           // default: ./downloads
+	DataDir              string `mapstructure:"data_dir"`               // default: ./data
+	PublicApiDomain      string `mapstructure:"public_api_domain"`
+	BindAddress          string `mapstructure:"bind_address"` // default: 127.0.0.1
+	BindPort             string `mapstructure:"bind_port"`    // default: 8072
 }
 
 var _ Config = (*configs)(nil)
 
 const min_sync_interval = 5 * time.Minute
+const min_command_check_interval = 10 * time.Second
 
 func (c *configs) GetReleaseSyncInterval() time.Duration {
 	duration, err := time.ParseDuration(c.ReleaseSyncInterval)
 	if err != nil {
-		slog.Warn("Failed to parse release sync interval",
+		slog.Warn("Failed to parse release_sync_interval",
 			slog.String("raw_value", c.ReleaseSyncInterval),
 			slog.String("error", err.Error()),
 		)
 	}
 	return max(duration, min_sync_interval)
 }
+
+func (c *configs) GetCommandCheckInterval() time.Duration {
+	duration, err := time.ParseDuration(c.CommandCheckInterval)
+	if err != nil {
+		slog.Warn("Failed to parse command_check_interval",
+			slog.String("raw_value", c.CommandCheckInterval),
+			slog.String("error", err.Error()),
+		)
+	}
+	return max(duration, min_command_check_interval)
+}
+
 func (c *configs) GetDownloadDir() string {
 	if c.DownloadDir == "" {
 		return "./downloads"
@@ -140,6 +156,26 @@ func LoadConfigs(configPath string) (Config, error) {
 			c.ReleaseSyncInterval = min_sync_interval.String()
 		} else {
 			c.ReleaseSyncInterval = duration.String()
+		}
+	}
+
+	if c.CommandCheckInterval != "" {
+		duration, err := time.ParseDuration(c.CommandCheckInterval)
+		if err != nil {
+			slog.Warn("Invalid command_check_interval format",
+				slog.String("value", c.CommandCheckInterval),
+				slog.String("error", err.Error()),
+				slog.String("using_default", min_command_check_interval.String()))
+
+			c.CommandCheckInterval = min_command_check_interval.String()
+		} else if duration < min_command_check_interval {
+			slog.Warn("Configured command_check_interval is too short",
+				slog.Duration("provided", duration),
+				slog.Duration("minimum_allowed", min_command_check_interval))
+
+			c.CommandCheckInterval = min_command_check_interval.String()
+		} else {
+			c.CommandCheckInterval = duration.String()
 		}
 	}
 

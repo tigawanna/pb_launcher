@@ -14,6 +14,7 @@
     "@hookform/resolvers": "^5.0.1",
     "@tailwindcss/vite": "^4.1.8",
     "@tanstack/react-query": "^5.79.0",
+    "@uidotdev/usehooks": "^2.4.1",
     "classnames": "^2.5.1",
     "lucide-react": "^0.511.0",
     "pocketbase": "^0.26.0",

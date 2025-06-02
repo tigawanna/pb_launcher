@@ -15,7 +15,7 @@ const queryClient = new QueryClient({
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <Toaster reverseOrder={false} />
+    <Toaster reverseOrder={false} position="top-right" />
     <QueryClientProvider client={queryClient}>
       <ModalProvider>
         <ConfirmModalProvider>

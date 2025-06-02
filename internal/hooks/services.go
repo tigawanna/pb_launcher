@@ -23,7 +23,7 @@ func AddServiceHooks(app *pocketbase.PocketBase, discovery *domain.ServiceDiscov
 			}
 
 			restart_policy := e.Record.GetString("restart_policy")
-			if !slices.Contains([]string{}, restart_policy) {
+			if !slices.Contains([]string{"no", "on-failure"}, restart_policy) {
 				restart_policy = "no"
 			}
 
@@ -39,7 +39,7 @@ func AddServiceHooks(app *pocketbase.PocketBase, discovery *domain.ServiceDiscov
 	app.OnRecordUpdateRequest(collections.Services).BindFunc(func(e *core.RecordRequestEvent) error {
 		updatedName := e.Record.GetString("name")
 		updatedPolicy := e.Record.Get("restart_policy")
-		isDeleted := e.Record.Get("deleted")
+		deleted := e.Record.GetDateTime("deleted")
 
 		currentRecord, err := e.App.FindRecordById(e.Collection, e.Record.GetString("id"))
 		if err != nil {
@@ -48,10 +48,30 @@ func AddServiceHooks(app *pocketbase.PocketBase, discovery *domain.ServiceDiscov
 
 		currentRecord.Set("name", updatedName)
 		currentRecord.Set("restart_policy", updatedPolicy)
-		currentRecord.Set("deleted", isDeleted)
+		currentRecord.Set("deleted", deleted)
 
 		e.Record = currentRecord
-		return e.Next()
+		if err := e.Next(); err != nil {
+			return err
+		}
+		if !deleted.IsZero() {
+			comandCollection, err := e.App.FindCachedCollectionByNameOrId(collections.ServicesComands)
+			if err != nil {
+				return err
+			}
+			record := core.NewRecord(comandCollection)
+
+			record.Set("service", e.Record.Id)
+			record.Set("action", "stop")
+			record.Set("status", "pending")
+			record.Set("error_message", "")
+			record.Set("executed", nil)
+
+			if err := e.App.Save(record); err != nil {
+				return err
+			}
+		}
+		return nil
 	})
 
 	app.OnRecordAfterCreateSuccess(collections.Services).BindFunc(func(e *core.RecordEvent) error {
@@ -61,7 +81,7 @@ func AddServiceHooks(app *pocketbase.PocketBase, discovery *domain.ServiceDiscov
 		}
 		record := core.NewRecord(comandCollection)
 
-		record.Set("service", e.Record.Get("id"))
+		record.Set("service", e.Record.Id)
 		record.Set("action", "start")
 		record.Set("status", "pending")
 		record.Set("error_message", "")
@@ -72,6 +92,7 @@ func AddServiceHooks(app *pocketbase.PocketBase, discovery *domain.ServiceDiscov
 		}
 		return e.Next()
 	})
+
 	app.OnRecordAfterUpdateSuccess(collections.Services).BindFunc(func(e *core.RecordEvent) error {
 		discovery.InvalidateServiceByID(e.Record.Id)
 		return e.Next()
