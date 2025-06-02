@@ -91,6 +91,17 @@ export const releaseService = {
       restart_policy: data.restart_policy,
     });
   },
+
+  buildServiceUrl(id: string): string {
+    const { protocol, hostname, port } = window.location;
+    const isDefaultPort =
+      (protocol === 'http:' && port === '80') ||
+      (protocol === 'https:' && port === '443');
+
+    const portPart = port && !isDefaultPort ? `:${port}` : '';
+    return `${protocol}//${id}.${hostname}${portPart}`;
+  },
+
   fetchAllServices: async (): Promise<ServiceDto[]> => {
     const [services, commands] = await Promise.all([
       pb
@@ -127,7 +138,7 @@ export const releaseService = {
         id: s.id,
         name: s.name,
         status: pendingServices.has(s.id) ? "pending" : s.status,
-        url: `${window.location.protocol}//${s.id}.${window.location.hostname}`,
+        url: releaseService.buildServiceUrl(s.id),
         boot_user_email: s.boot_user_email,
         boot_user_password: s.boot_user_password,
         last_started: s.last_started,

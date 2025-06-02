@@ -50,7 +50,7 @@ func createRootCommand(app core.App) *cobra.Command {
 				launcher.Module,
 				proxy.Module,
 				internal.Module, // hooks
-				fx.Invoke(Bootstrap),
+				fx.Invoke(Bootstrap, ServeUI),
 			).Run()
 		},
 	}
