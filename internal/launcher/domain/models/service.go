@@ -29,4 +29,5 @@ type Service struct {
 	BootCompleted    bool
 	BootUserEmail    string
 	BootUserPassword string
+	Deleted          string
 }

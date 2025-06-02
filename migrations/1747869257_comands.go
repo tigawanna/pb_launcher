@@ -2,6 +2,7 @@ package migrations
 
 import (
 	"pb_launcher/collections"
+	"pb_launcher/utils"
 
 	"github.com/pocketbase/pocketbase/core"
 	m "github.com/pocketbase/pocketbase/migrations"
@@ -14,7 +15,6 @@ func init() {
 			return err
 		}
 		comands := core.NewBaseCollection(collections.ServicesComands)
-		comands.System = true
 		comands.Fields.Add(
 			&core.RelationField{
 				Name:         "service",
@@ -56,6 +56,16 @@ func init() {
 			`CREATE INDEX idx_comands_created ON comands(created)`,
 			`CREATE INDEX idx_comands_status ON comands(status)`,
 		)
+
+		comands.ListRule = utils.StrPointer(`@request.auth.id != ""`)
+		comands.CreateRule = utils.StrPointer(`@request.auth.id != ""`)
+
 		return app.Save(comands)
-	}, nil)
+	}, func(app core.App) error {
+		comands, err := app.FindCollectionByNameOrId(collections.ServicesComands)
+		if err != nil {
+			return err
+		}
+		return app.Delete(comands)
+	})
 }

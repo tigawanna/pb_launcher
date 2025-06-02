@@ -248,6 +248,9 @@ func (lm *LauncherManager) RecoveryLastState(ctx context.Context) error {
 	}
 
 	for _, service := range services {
+		if service.Deleted != "" {
+			continue
+		}
 		if err := lm.startService(ctx, service); err != nil {
 			slog.Error("failed to start service",
 				"serviceID", service.ID,

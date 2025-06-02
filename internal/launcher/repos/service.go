@@ -37,11 +37,11 @@ func (s *ServiceRepository) services(ids ...string) ([]models.Service, error) {
 			rpo.exec_file_pattern,
 			s.boot_completed,
 			s.boot_user_email,
-			s.boot_user_password
+			s.boot_user_password,
+			s.deleted
 		from services s
 		inner join releases r on s."release" = r.id
-		inner join repositories rpo on rpo.id = r.repository
-		where (s.deleted is null or s.deleted ='')`
+		inner join repositories rpo on rpo.id = r.repository`
 
 	var quoted []string
 	for _, id := range ids {
@@ -72,6 +72,7 @@ func (s *ServiceRepository) services(ids ...string) ([]models.Service, error) {
 		bootCompleted, _ := row["boot_completed"]
 		bootUserEmail, _ := row["boot_user_email"]
 		bootUserPassword, _ := row["boot_user_password"]
+		deleted, _ := row["deleted"]
 
 		ExecFilePattern, err := regexp.Compile(execPattern.String)
 		if err != nil {
@@ -89,6 +90,7 @@ func (s *ServiceRepository) services(ids ...string) ([]models.Service, error) {
 			BootUserEmail:    bootUserEmail.String,
 			BootUserPassword: bootUserPassword.String,
 			BootCompleted:    bootCompleted.String == "yes",
+			Deleted:          deleted.String,
 		})
 	}
 

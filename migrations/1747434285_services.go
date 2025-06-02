@@ -2,6 +2,7 @@ package migrations
 
 import (
 	"pb_launcher/collections"
+	"pb_launcher/utils"
 
 	"github.com/pocketbase/pocketbase/core"
 	m "github.com/pocketbase/pocketbase/migrations"
@@ -81,6 +82,12 @@ func init() {
 				System: true,
 			},
 		)
+
+		services.ListRule = utils.StrPointer(`@request.auth.id != ""`)
+		services.ViewRule = utils.StrPointer(`@request.auth.id != ""`)
+		services.CreateRule = utils.StrPointer(`@request.auth.id != ""`)
+		services.UpdateRule = utils.StrPointer(`@request.auth.id != ""`)
+
 		return app.Save(services)
 	}, func(app core.App) error {
 		services, err := app.FindCollectionByNameOrId(collections.Services)

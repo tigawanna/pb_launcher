@@ -1,5 +1,5 @@
-import { object } from "yup";
-import { emailRequired, stringRequired } from "../../utils/validation";
+import { object, string as yupString } from "yup";
+import { emailRequired } from "../../utils/validation";
 import { useCustomForm } from "../../hooks/useCustomForm";
 import { InputField } from "../../components/fields/InputField";
 import { Button } from "../../components/buttons/Button";
@@ -10,10 +10,9 @@ import { getErrorMessage } from "../../utils/errors";
 
 const schema = object({
   email: emailRequired("Email is required"),
-  password: stringRequired("Password is required").min(
-    8,
-    "Password must be at least 8 characters long",
-  ),
+  password: yupString()
+    .required("Password is required")
+    .min(8, "Password must be at least 8 characters long"),
 });
 
 export const LoginPage = () => {
