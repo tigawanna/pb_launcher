@@ -1,4 +1,4 @@
-import type { FC } from "react";
+import { useRef, type FC } from "react";
 import type { ServiceDto } from "../../../services/release";
 import { Copy, MoreVertical, Pencil, Power, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
@@ -9,10 +9,27 @@ type Props = {
   service: ServiceDto;
   onDelete: () => void;
   onEdit: () => void;
+  onStart: () => void;
+  onStop: () => void;
+  onRestart: () => void;
 };
 
-export const ServiceCard: FC<Props> = ({ service, onDelete, onEdit }) => {
+export const ServiceCard: FC<Props> = ({
+  service,
+  onDelete,
+  onEdit,
+  onRestart,
+  onStart,
+  onStop,
+}) => {
   const [, copyToClipboard] = useCopyToClipboard();
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const executeAfterBlur = (fn: () => void) => {
+    (document.activeElement as HTMLElement)?.blur?.();
+    fn();
+  };
+
   return (
     <div
       key={service.id}
@@ -21,7 +38,7 @@ export const ServiceCard: FC<Props> = ({ service, onDelete, onEdit }) => {
       <div className="card-body">
         <div className="flex justify-between items-start">
           <h2 className="card-title text-base-content">{service.name}</h2>
-          <div className="dropdown dropdown-end">
+          <div ref={dropdownRef} className="dropdown dropdown-end select-none">
             <label
               tabIndex={0}
               className="btn btn-sm btn-ghost btn-circle text-base-content"
@@ -35,7 +52,7 @@ export const ServiceCard: FC<Props> = ({ service, onDelete, onEdit }) => {
               <li>
                 <button
                   className="flex items-center gap-2 w-full justify-start hover:bg-base-200 text-primary"
-                  onClick={onEdit}
+                  onClick={() => executeAfterBlur(onEdit)}
                 >
                   <Pencil className="w-4 h-4" />
                   Edit
@@ -61,6 +78,7 @@ export const ServiceCard: FC<Props> = ({ service, onDelete, onEdit }) => {
                             ? "text-base-content/60 cursor-not-allowed"
                             : "text-success hover:bg-success/10 hover:text-success",
                         )}
+                        onClick={() => executeAfterBlur(onStart)}
                       >
                         Start
                       </button>
@@ -74,6 +92,7 @@ export const ServiceCard: FC<Props> = ({ service, onDelete, onEdit }) => {
                             ? "text-base-content/60 cursor-not-allowed"
                             : "text-warning hover:bg-warning/10 hover:text-warning",
                         )}
+                        onClick={() => executeAfterBlur(onRestart)}
                       >
                         Restart
                       </button>
@@ -87,6 +106,7 @@ export const ServiceCard: FC<Props> = ({ service, onDelete, onEdit }) => {
                             ? "text-base-content/60 cursor-not-allowed"
                             : "text-error hover:bg-error/10 hover:text-error",
                         )}
+                        onClick={() => executeAfterBlur(onStop)}
                       >
                         Stop
                       </button>
@@ -96,7 +116,7 @@ export const ServiceCard: FC<Props> = ({ service, onDelete, onEdit }) => {
               </li>
               <li>
                 <button
-                  onClick={onDelete}
+                  onClick={() => executeAfterBlur(onDelete)}
                   className="flex items-center gap-2 w-full justify-start text-error hover:bg-base-200"
                 >
                   <Trash2 className="w-4 h-4" />

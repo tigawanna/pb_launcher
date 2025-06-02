@@ -56,7 +56,10 @@ func init() {
 			`CREATE INDEX idx_comands_created ON comands(created)`,
 			`CREATE INDEX idx_comands_status ON comands(status)`,
 		)
+
 		comands.ListRule = utils.StrPointer(`@request.auth.id != ""`)
+		comands.CreateRule = utils.StrPointer(`@request.auth.id != ""`)
+
 		return app.Save(comands)
 	}, func(app core.App) error {
 		comands, err := app.FindCollectionByNameOrId(collections.ServicesComands)

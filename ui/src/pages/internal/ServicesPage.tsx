@@ -20,7 +20,7 @@ export const ServicesPage = () => {
   const servicesQuery = useQuery({
     queryKey: ["services"],
     queryFn: releaseService.fetchAllServices,
-    refetchInterval: 5000,
+    refetchInterval: 3000,
   });
 
   const [query, setQuery] = useState("");
@@ -50,13 +50,43 @@ export const ServicesPage = () => {
     onError: error => toast.error(getErrorMessage(error)),
   });
 
-  const handleDelete = async (id: string) => {
+  const handleDeleteService = async (id: string) => {
     const ok = await confirm(
       "Delete service",
       "Are you sure you want to delete this service?",
     );
     if (ok) {
       deleteMutation.mutate(id);
+    }
+  };
+
+  const serviceCommandMutation = useMutation({
+    mutationFn: releaseService.executeServiceCommand,
+    onSuccess: () => setTimeout(() => servicesQuery.refetch()),
+    onError: error => toast.error(getErrorMessage(error)),
+  });
+
+  const handleStartService = async (id: string) => {
+    serviceCommandMutation.mutate({ service_id: id, action: "start" });
+  };
+
+  const handleStopService = async (id: string) => {
+    const ok = await confirm(
+      "Stop service",
+      "Are you sure you want to stop this service?",
+    );
+    if (ok) {
+      serviceCommandMutation.mutate({ service_id: id, action: "stop" });
+    }
+  };
+
+  const handleRestartService = async (id: string) => {
+    const ok = await confirm(
+      "Restart service",
+      "Are you sure you want to restart this service?",
+    );
+    if (ok) {
+      serviceCommandMutation.mutate({ service_id: id, action: "restart" });
     }
   };
 
@@ -134,7 +164,10 @@ export const ServicesPage = () => {
             key={service.id}
             service={service}
             onEdit={() => openEditServiceModal(service)}
-            onDelete={() => handleDelete(service.id)}
+            onDelete={() => handleDeleteService(service.id)}
+            onStart={() => handleStartService(service.id)}
+            onStop={() => handleStopService(service.id)}
+            onRestart={() => handleRestartService(service.id)}
           />
         ))}
       </div>

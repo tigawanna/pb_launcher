@@ -144,4 +144,8 @@ export const releaseService = {
     const services = pb.collection(SERVICES_COLLECTION);
     await services.update(id, { deleted: new Date().toJSON() });
   },
+  executeServiceCommand: async (data: { service_id: string, action: "stop" | "start" | "restart" }) => {
+    const comands = pb.collection(COMANDS_COLLECTION)
+    await comands.create({ service: data.service_id, action: data.action })
+  }
 };
