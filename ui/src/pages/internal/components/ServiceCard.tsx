@@ -1,9 +1,18 @@
-import { useRef, type FC } from "react";
+import { useRef, useState, type FC } from "react";
 import type { ServiceDto } from "../../../services/release";
-import { Copy, MoreVertical, Pencil, Power, Trash2 } from "lucide-react";
-import toast from "react-hot-toast";
+import {
+  Check,
+  Copy,
+  MoreVertical,
+  Pencil,
+  Power,
+  ShieldAlert,
+  Trash2,
+} from "lucide-react";
 import classNames from "classnames";
 import { useCopyToClipboard } from "@uidotdev/usehooks";
+import { useModal } from "../../../components/modal/hook";
+import { DefaultCredentialsCard } from "./DefaultCredentialsCard";
 
 type Props = {
   service: ServiceDto;
@@ -22,12 +31,29 @@ export const ServiceCard: FC<Props> = ({
   onStart,
   onStop,
 }) => {
-  const [, copyToClipboard] = useCopyToClipboard();
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const { openModal } = useModal();
+  const [, copyToClipboard] = useCopyToClipboard();
+  const [copiedField, setCopiedField] = useState<"url" | null>(null);
+  const handleCopy = (value: string, field: "url") => {
+    copyToClipboard(value);
+    setCopiedField(field);
+    setTimeout(() => setCopiedField(null), 1200);
+  };
 
   const executeAfterBlur = (fn: () => void) => {
     (document.activeElement as HTMLElement)?.blur?.();
     fn();
+  };
+
+  const showDefaultCredentials = () => {
+    openModal(
+      <DefaultCredentialsCard
+        username={service.boot_user_email}
+        password={service.boot_user_password}
+      />,
+    );
   };
 
   return (
@@ -158,7 +184,7 @@ export const ServiceCard: FC<Props> = ({
             <span className="capitalize">{service.restart_policy}</span>
           </div>
         </div>
-        <div className="flex">
+        <div className="flex gap-8">
           <a
             href={service.url}
             target="_blank"
@@ -167,13 +193,20 @@ export const ServiceCard: FC<Props> = ({
           >
             {service.url}
           </a>
-          <Copy
-            className="w-4 h-4 select-none active:translate-[0.2px] cursor-pointer"
-            onClick={() => {
-              copyToClipboard(service.url ?? "");
-              toast.success("URL copied to clipboard");
-            }}
-          />
+          <div className="flex gap-4">
+            {copiedField === "url" ? (
+              <Check className="w-4 h-4 select-none active:translate-[0.5px] cursor-pointer" />
+            ) : (
+              <Copy
+                className="w-4 h-4 select-none active:translate-[0.5px] cursor-pointer"
+                onClick={() => handleCopy(service.url ?? "", "url")}
+              />
+            )}
+            <ShieldAlert
+              className="w-4 h-4 active:translate-[0.5px]"
+              onClick={showDefaultCredentials}
+            />
+          </div>
         </div>
       </div>
     </div>
