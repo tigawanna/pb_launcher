@@ -1,4 +1,5 @@
 import { pb } from "./client/pb";
+export const base_url = import.meta.env.VITE_BASE_URL ?? "/";
 
 export const RELEASES_COLLECTION = "releases";
 export const SERVICES_COLLECTION = "services";
@@ -93,12 +94,12 @@ export const releaseService = {
   },
 
   buildServiceUrl(id: string): string {
-    const { protocol, hostname, port } = window.location;
+    const url = base_url ? new URL(base_url) : new URL(window.location.href);
+    const { protocol, hostname, port } = url;
     const isDefaultPort =
-      (protocol === 'http:' && port === '80') ||
-      (protocol === 'https:' && port === '443');
-
-    const portPart = port && !isDefaultPort ? `:${port}` : '';
+      (protocol === "http:" && port === "80") ||
+      (protocol === "https:" && port === "443");
+    const portPart = port && !isDefaultPort ? `:${port}` : "";
     return `${protocol}//${id}.${hostname}${portPart}`;
   },
 
@@ -155,8 +156,11 @@ export const releaseService = {
     const services = pb.collection(SERVICES_COLLECTION);
     await services.update(id, { deleted: new Date().toJSON() });
   },
-  executeServiceCommand: async (data: { service_id: string, action: "stop" | "start" | "restart" }) => {
-    const comands = pb.collection(COMANDS_COLLECTION)
-    await comands.create({ service: data.service_id, action: data.action })
-  }
+  executeServiceCommand: async (data: {
+    service_id: string;
+    action: "stop" | "start" | "restart";
+  }) => {
+    const comands = pb.collection(COMANDS_COLLECTION);
+    await comands.create({ service: data.service_id, action: data.action });
+  },
 };
