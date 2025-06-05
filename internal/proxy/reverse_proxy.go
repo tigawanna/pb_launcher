@@ -2,6 +2,7 @@ package proxy
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net"
@@ -19,43 +20,52 @@ import (
 )
 
 type DynamicReverseProxy struct {
-	discovery  *domain.ServiceDiscovery
-	apiDomain  string
-	apiAddress string
-	timeout    time.Duration
+	discovery       *domain.ServiceDiscovery
+	domainDiscovery *domain.DomainServiceDiscovery
+	apiDomain       string
+	apiAddress      string
+	timeout         time.Duration
 }
 
 var _ http.Handler = (*DynamicReverseProxy)(nil)
 
 func NewDynamicReverseProxy(
 	discovery *domain.ServiceDiscovery,
+	domainDiscovery *domain.DomainServiceDiscovery,
 	conf configs.Config,
 	pbConf *apis.ServeConfig,
 ) *DynamicReverseProxy {
 	return &DynamicReverseProxy{
-		discovery:  discovery,
-		apiDomain:  conf.GetPublicApiDomain(),
-		apiAddress: pbConf.HttpAddr,
-		timeout:    15 * time.Second,
+		discovery:       discovery,
+		domainDiscovery: domainDiscovery,
+		apiDomain:       conf.GetPublicApiDomain(),
+		apiAddress:      pbConf.HttpAddr,
+		timeout:         15 * time.Second,
 	}
 }
 
-func (rp *DynamicReverseProxy) extractServiceID(host string) (string, error) {
+func (rp *DynamicReverseProxy) resolveServiceID(ctx context.Context, host string) (string, error) {
 	if host == rp.apiDomain {
 		return "", nil
 	}
-	if !strings.HasSuffix(host, "."+rp.apiDomain) {
-		return "", fmt.Errorf("host does not match API domain")
+
+	if strings.HasSuffix(host, "."+rp.apiDomain) {
+		prefix := strings.TrimSuffix(host, "."+rp.apiDomain)
+		if strings.Contains(prefix, ".") || prefix == "" {
+			return "", fmt.Errorf("invalid service ID")
+		}
+		return prefix, nil
 	}
-	prefix := strings.TrimSuffix(host, "."+rp.apiDomain)
-	if strings.Contains(prefix, ".") || prefix == "" {
-		return "", fmt.Errorf("invalid service ID")
+
+	serviceID, err := rp.domainDiscovery.FindServiceIDByDomain(ctx, host)
+	if err != nil {
+		return "", errors.New("service ID not found for domain")
 	}
-	return prefix, nil
+	return *serviceID, nil
 }
 
 func (rp *DynamicReverseProxy) resolveServiceTarget(ctx context.Context, host string) (*url.URL, error) {
-	serviceID, err := rp.extractServiceID(host)
+	serviceID, err := rp.resolveServiceID(ctx, host)
 	if err != nil {
 		return nil, fmt.Errorf("invalid service ID: %w", err)
 	}

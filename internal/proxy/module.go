@@ -22,7 +22,10 @@ var Module = fx.Module(
 			fx.As(new(repositories.ServiceRepository)),
 		),
 	),
-	fx.Provide(domain.NewServiceDiscovery),
+	fx.Provide(
+		domain.NewServiceDiscovery,
+		domain.NewDomainServiceDiscovery,
+	),
 	fx.Provide(NewDynamicReverseProxy),
 	fx.Invoke(RunProxy, PrintProxyInfo),
 )

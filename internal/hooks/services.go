@@ -10,7 +10,10 @@ import (
 	"github.com/pocketbase/pocketbase/core"
 )
 
-func AddServiceHooks(app *pocketbase.PocketBase, discovery *domain.ServiceDiscovery) {
+func AddServiceHooks(app *pocketbase.PocketBase,
+	serviceDiscovery *domain.ServiceDiscovery,
+	domainDiscovery *domain.DomainServiceDiscovery,
+) {
 	app.OnRecordCreateRequest(collections.Services).
 		BindFunc(func(e *core.RecordRequestEvent) error {
 			if e.Auth == nil {
@@ -93,8 +96,33 @@ func AddServiceHooks(app *pocketbase.PocketBase, discovery *domain.ServiceDiscov
 		return e.Next()
 	})
 
-	app.OnRecordAfterUpdateSuccess(collections.Services).BindFunc(func(e *core.RecordEvent) error {
-		discovery.InvalidateServiceByID(e.Record.Id)
-		return e.Next()
-	})
+	app.OnRecordAfterUpdateSuccess(collections.Services).
+		BindFunc(func(e *core.RecordEvent) error {
+			if err := e.Next(); err != nil {
+				return err
+			}
+			serviceDiscovery.InvalidateServiceCacheByID(e.Record.Id)
+			return nil
+		})
+
+	app.OnRecordAfterUpdateSuccess(collections.ServicesDomains).
+		BindFunc(func(e *core.RecordEvent) error {
+			if err := e.Next(); err != nil {
+				return err
+			}
+			domain := e.Record.GetString("domain")
+			domainDiscovery.InvalidateDomain(domain)
+			return nil
+		})
+
+	app.OnRecordAfterDeleteSuccess(collections.ServicesDomains).
+		BindFunc(func(e *core.RecordEvent) error {
+			if err := e.Next(); err != nil {
+				return err
+			}
+			domain := e.Record.GetString("domain")
+			domainDiscovery.InvalidateDomain(domain)
+			return nil
+		})
+
 }

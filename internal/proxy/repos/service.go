@@ -28,7 +28,7 @@ func (r *ServiceRepository) FindRunningServiceByID(ctx context.Context, id strin
 		return nil
 	})
 	if errors.Is(err, sql.ErrNoRows) {
-		return nil, repositories.ErrServiceNotFound
+		return nil, repositories.ErrNotFound
 	}
 	if err != nil {
 		return nil, err
@@ -38,4 +38,17 @@ func (r *ServiceRepository) FindRunningServiceByID(ctx context.Context, id strin
 		IP:   record.GetString("ip"),
 		Port: record.GetInt("port"),
 	}, nil
+}
+
+func (r *ServiceRepository) FindServiceIDByDomain(ctx context.Context, domain string) (*string, error) {
+	exp := dbx.NewExp("domain={:domain}", dbx.Params{"domain": domain})
+	records, err := r.app.FindAllRecords(collections.ServicesDomains, exp)
+	if err != nil {
+		return nil, err
+	}
+	if len(records) == 0 {
+		return nil, repositories.ErrNotFound
+	}
+	service := records[0].GetString("service")
+	return &service, nil
 }
