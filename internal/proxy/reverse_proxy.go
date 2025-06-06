@@ -38,7 +38,7 @@ func NewDynamicReverseProxy(
 	return &DynamicReverseProxy{
 		discovery:       discovery,
 		domainDiscovery: domainDiscovery,
-		apiDomain:       conf.GetPublicApiDomain(),
+		apiDomain:       conf.GetDomain(),
 		apiAddress:      pbConf.HttpAddr,
 		timeout:         15 * time.Second,
 	}

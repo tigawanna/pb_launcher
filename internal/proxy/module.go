@@ -61,11 +61,11 @@ func PrintProxyInfo(c configs.Config) {
 	if scheme == "" {
 		scheme = "http"
 		addr := fmt.Sprintf("%s://%s:%s", scheme, c.GetBindAddress(), port)
-		pub := fmt.Sprintf("%s://%s:%s", scheme, c.GetPublicApiDomain(), port)
+		pub := fmt.Sprintf("%s://%s:%s", scheme, c.GetDomain(), port)
 		regular.Printf("├─ Proxy:  %s\n", color.CyanString(addr))
 		regular.Printf("├─ Public: %s\n", color.CyanString(pub))
 		return
 	}
 	regular.Printf("├─ Proxy:  %s\n", color.CyanString("%s://%s", scheme, c.GetBindAddress()))
-	regular.Printf("├─ Public: %s\n", color.CyanString("%s://%s", scheme, c.GetPublicApiDomain()))
+	regular.Printf("├─ Public: %s\n", color.CyanString("%s://%s", scheme, c.GetDomain()))
 }

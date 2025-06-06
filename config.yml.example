@@ -2,11 +2,19 @@
 bind_address: 127.0.0.1
 bind_port: "7080"
 
-# API
-public_api_domain: pb.labenv.test:7080
+domain: pb.labenv.test
+
+# https
+https: true
+https_port: "8443"
+cert:
+  provider: cloudflare
+  props:
+    api_key: "CLOUDFLARE_API_KEY"
 
 # Synchronization
 release_sync_interval: 10m
+command_check_interval: 10s
 
 # Directories
 download_dir: ./downloads

@@ -13,25 +13,52 @@ import (
 	"github.com/spf13/viper"
 )
 
+type TlsConfig interface {
+	GetProvider() string
+	GetProp(key string) (string, bool)
+}
+
 type Config interface {
 	GetReleaseSyncInterval() time.Duration
 	GetCommandCheckInterval() time.Duration
 
 	GetDownloadDir() string
 	GetDataDir() string
-	GetPublicApiDomain() string
+	GetDomain() string
 	GetBindAddress() string
 	GetBindPort() string
+
+	GetTlsConfig() TlsConfig
+}
+
+type tls_configs struct {
+	Provider string            `mapstructure:"provider"`
+	Props    map[string]string `mapstructure:"props"`
+}
+
+var _ TlsConfig = (*tls_configs)(nil)
+
+func (c *tls_configs) GetProvider() string {
+	return strings.TrimSpace(c.Provider)
+}
+
+func (c *tls_configs) GetProp(key string) (string, bool) {
+	if c.Props == nil {
+		return "", false
+	}
+	val, ok := c.Props[key]
+	return val, ok
 }
 
 type configs struct {
-	ReleaseSyncInterval  string `mapstructure:"release_sync_interval"`  // default: 10m
-	CommandCheckInterval string `mapstructure:"command_check_interval"` // default: 10ms
-	DownloadDir          string `mapstructure:"download_dir"`           // default: ./downloads
-	DataDir              string `mapstructure:"data_dir"`               // default: ./data
-	PublicApiDomain      string `mapstructure:"public_api_domain"`
-	BindAddress          string `mapstructure:"bind_address"` // default: 127.0.0.1
-	BindPort             string `mapstructure:"bind_port"`    // default: 8072
+	ReleaseSyncInterval  string      `mapstructure:"release_sync_interval"`  // default: 10m
+	CommandCheckInterval string      `mapstructure:"command_check_interval"` // default: 10ms
+	DownloadDir          string      `mapstructure:"download_dir"`           // default: ./downloads
+	DataDir              string      `mapstructure:"data_dir"`               // default: ./data
+	Domain               string      `mapstructure:"domain"`
+	BindAddress          string      `mapstructure:"bind_address"` // default: 127.0.0.1
+	BindPort             string      `mapstructure:"bind_port"`    // default: 8072
+	Tls                  tls_configs `mapstructure:"tls"`
 }
 
 var _ Config = (*configs)(nil)
@@ -75,15 +102,15 @@ func (c *configs) GetDataDir() string {
 	return c.DataDir
 }
 
-func (c *configs) GetPublicApiDomain() string {
-	if c.PublicApiDomain == "" {
+func (c *configs) GetDomain() string {
+	if c.Domain == "" {
 		return "pb.labenv.test"
 	}
-	host, _, err := net.SplitHostPort(c.PublicApiDomain)
+	host, _, err := net.SplitHostPort(c.Domain)
 	if err == nil {
 		return host
 	}
-	return strings.Split(c.PublicApiDomain, ":")[0]
+	return strings.Split(c.Domain, ":")[0]
 }
 
 func (c *configs) GetBindAddress() string {
@@ -99,6 +126,8 @@ func (c *configs) GetBindPort() string {
 	}
 	return c.BindPort
 }
+
+func (c *configs) GetTlsConfig() TlsConfig { return &c.Tls }
 
 func loadConfigFromFile(filePath string) (*configs, error) {
 	v := viper.New()
@@ -135,7 +164,7 @@ func LoadConfigs(configPath string) (Config, error) {
 	c.ReleaseSyncInterval = strings.TrimSpace(c.ReleaseSyncInterval)
 	c.DownloadDir = strings.TrimSpace(c.DownloadDir)
 	c.DataDir = strings.TrimSpace(c.DataDir)
-	c.PublicApiDomain = strings.TrimSpace(c.PublicApiDomain)
+	c.Domain = strings.TrimSpace(c.Domain)
 	c.BindAddress = strings.TrimSpace(c.BindAddress)
 	c.BindPort = strings.TrimSpace(c.BindPort)
 
