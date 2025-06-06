@@ -8,7 +8,8 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"math/big"
-	"pb_launcher/internal/certprovider/tlscommon"
+	"pb_launcher/internal/certificates/tlscommon"
+
 	"strings"
 	"time"
 )

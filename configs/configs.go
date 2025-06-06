@@ -24,6 +24,8 @@ type Config interface {
 
 	GetDownloadDir() string
 	GetDataDir() string
+	GetCertificatesDir() string
+
 	GetDomain() string
 	GetBindAddress() string
 	GetBindPort() string
@@ -41,6 +43,9 @@ type tls_configs struct {
 var _ TlsConfig = (*tls_configs)(nil)
 
 func (c *tls_configs) GetProvider() string {
+	if c.Provider == "" {
+		return "selfsigned"
+	}
 	return strings.TrimSpace(c.Provider)
 }
 
@@ -56,6 +61,7 @@ type configs struct {
 	ReleaseSyncInterval  string      `mapstructure:"release_sync_interval"`  // default: 10m
 	CommandCheckInterval string      `mapstructure:"command_check_interval"` // default: 10ms
 	DownloadDir          string      `mapstructure:"download_dir"`           // default: ./downloads
+	CertificatesDir      string      `mapstructure:"certificates_dir"`       // default: ./.certificates
 	DataDir              string      `mapstructure:"data_dir"`               // default: ./data
 	Domain               string      `mapstructure:"domain"`
 	BindAddress          string      `mapstructure:"bind_address"` // default: 127.0.0.1
@@ -104,6 +110,13 @@ func (c *configs) GetDataDir() string {
 		return "./data"
 	}
 	return c.DataDir
+}
+
+func (c *configs) GetCertificatesDir() string {
+	if c.CertificatesDir == "" {
+		return "./.certificates"
+	}
+	return c.CertificatesDir
 }
 
 func (c *configs) GetDomain() string {

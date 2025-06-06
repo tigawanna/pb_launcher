@@ -4,7 +4,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"pb_launcher/internal/certprovider/tlscommon"
+	"pb_launcher/internal/certificates/tlscommon"
+
 	"strings"
 )
 

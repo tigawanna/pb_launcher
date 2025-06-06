@@ -7,8 +7,8 @@ import (
 	"pb_launcher/configs"
 	"pb_launcher/helpers/unzip"
 	"pb_launcher/internal"
-	"pb_launcher/internal/certprovider"
-	"pb_launcher/internal/certprovider/tlscommon"
+
+	"pb_launcher/internal/certificates"
 	"pb_launcher/internal/download"
 	"pb_launcher/internal/launcher"
 	"pb_launcher/internal/proxy"
@@ -45,9 +45,7 @@ func createRootCommand(app core.App) *cobra.Command {
 				fx.Provide(func() (configs.Config, error) {
 					return configs.LoadConfigs(configFile)
 				}),
-				fx.Provide(func(c configs.Config) (tlscommon.Provider, error) {
-					return certprovider.NewProvider(c)
-				}),
+				certificates.Module,
 				fx.Provide(configs.NewPBServeConfig),
 				fx.Provide(unzip.NewUnzip),
 				fx.Supply(app),
