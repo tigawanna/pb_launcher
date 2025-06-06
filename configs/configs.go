@@ -28,6 +28,8 @@ type Config interface {
 	GetBindAddress() string
 	GetBindPort() string
 
+	UseHttps() bool
+	GetBindHttpsPort() string
 	GetTlsConfig() TlsConfig
 }
 
@@ -58,6 +60,8 @@ type configs struct {
 	Domain               string      `mapstructure:"domain"`
 	BindAddress          string      `mapstructure:"bind_address"` // default: 127.0.0.1
 	BindPort             string      `mapstructure:"bind_port"`    // default: 8072
+	Https                bool        `mapstructure:"https"`
+	HttpsPort            string      `mapstructure:"https_port"` // default: 8443
 	Tls                  tls_configs `mapstructure:"tls"`
 }
 
@@ -127,6 +131,15 @@ func (c *configs) GetBindPort() string {
 	return c.BindPort
 }
 
+func (c *configs) UseHttps() bool { return c.Https }
+
+func (c *configs) GetBindHttpsPort() string {
+	if c.HttpsPort == "" {
+		return "8443"
+	}
+	return c.HttpsPort
+}
+
 func (c *configs) GetTlsConfig() TlsConfig { return &c.Tls }
 
 func loadConfigFromFile(filePath string) (*configs, error) {
@@ -167,6 +180,7 @@ func LoadConfigs(configPath string) (Config, error) {
 	c.Domain = strings.TrimSpace(c.Domain)
 	c.BindAddress = strings.TrimSpace(c.BindAddress)
 	c.BindPort = strings.TrimSpace(c.BindPort)
+	c.HttpsPort = strings.TrimSpace(c.HttpsPort)
 
 	if c.ReleaseSyncInterval != "" {
 		duration, err := time.ParseDuration(c.ReleaseSyncInterval)

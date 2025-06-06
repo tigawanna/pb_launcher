@@ -52,6 +52,7 @@ func RunProxy(lc fx.Lifecycle, handler *DynamicReverseProxy, c configs.Config) {
 			return server.Shutdown(ctx)
 		},
 	})
+
 }
 
 func PrintProxyInfo(c configs.Config) {
@@ -60,6 +61,9 @@ func PrintProxyInfo(c configs.Config) {
 	scheme := map[string]string{"80": "http", "443": "https"}[port]
 	if scheme == "" {
 		scheme = "http"
+		if c.UseHttps() {
+			scheme = "https"
+		}
 		addr := fmt.Sprintf("%s://%s:%s", scheme, c.GetBindAddress(), port)
 		pub := fmt.Sprintf("%s://%s:%s", scheme, c.GetDomain(), port)
 		regular.Printf("├─ Proxy:  %s\n", color.CyanString(addr))
