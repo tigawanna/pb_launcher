@@ -51,7 +51,7 @@ func (s *TlsStorer) Store(domain string, cert tlscommon.Certificate) error {
 	return nil
 }
 
-func (s *TlsStorer) IsCertificateValid(cert tlscommon.Certificate) error {
+func (s *TlsStorer) IsCertificateValid(cert *tlscommon.Certificate) error {
 	block, _ := pem.Decode(cert.CertPEM)
 	if block == nil {
 		return tlscommon.ErrInvalidPEM
@@ -118,7 +118,7 @@ func (s *TlsStorer) Resolve(domain string) (*tlscommon.Certificate, error) {
 		CertPEM: certPEM,
 		KeyPEM:  keyPEM,
 	}
-	if err := s.IsCertificateValid(cert); err != nil {
+	if err := s.IsCertificateValid(&cert); err != nil {
 		return nil, err
 	}
 	return &cert, nil

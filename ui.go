@@ -45,7 +45,6 @@ func ServeUI(app *pocketbase.PocketBase) {
 					reqPath = "index.html"
 				}
 			}
-			fmt.Println("Hola como estas, si entra", e.Request.URL.Path, "=>", reqPath)
 			return e.FileFS(ui.DistDirFS, reqPath)
 		})
 		return se.Next()

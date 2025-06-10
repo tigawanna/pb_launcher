@@ -22,15 +22,15 @@ func NewSelfSignedProvider() *SelfSignedProvider {
 	return &SelfSignedProvider{}
 }
 
-func (s *SelfSignedProvider) RequestCertificate(domain string) (tlscommon.Certificate, error) {
+func (s *SelfSignedProvider) RequestCertificate(domain string) (*tlscommon.Certificate, error) {
 	priv, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
-		return tlscommon.Certificate{}, err
+		return nil, err
 	}
 
 	serialNumber, err := rand.Int(rand.Reader, new(big.Int).Lsh(big.NewInt(1), 128))
 	if err != nil {
-		return tlscommon.Certificate{}, err
+		return nil, err
 	}
 
 	dnsNames := []string{domain}
@@ -51,15 +51,14 @@ func (s *SelfSignedProvider) RequestCertificate(domain string) (tlscommon.Certif
 
 	derBytes, err := x509.CreateCertificate(rand.Reader, &template, &template, &priv.PublicKey, priv)
 	if err != nil {
-		return tlscommon.Certificate{}, err
+		return nil, err
 	}
 
 	certPEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: derBytes})
 	keyBytes, err := x509.MarshalECPrivateKey(priv)
 	if err != nil {
-		return tlscommon.Certificate{}, err
+		return nil, err
 	}
 	keyPEM := pem.EncodeToMemory(&pem.Block{Type: "EC PRIVATE KEY", Bytes: keyBytes})
-
-	return tlscommon.Certificate{CertPEM: certPEM, KeyPEM: keyPEM}, nil
+	return &tlscommon.Certificate{CertPEM: certPEM, KeyPEM: keyPEM}, nil
 }

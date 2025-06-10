@@ -2,7 +2,7 @@ run:
 	@env TZ=UTC go run *.go -c config.yml
 
 build-ui:
-	@cd ui && npm run build
+	@cd ui && rm -rf dist && npm run build-embed
 
 build: build-ui
 	@go build -o build/pb_launcher *.go

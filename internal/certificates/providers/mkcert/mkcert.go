@@ -17,10 +17,10 @@ func NewMkcertProvider() *MkcertProvider {
 	return &MkcertProvider{}
 }
 
-func (s *MkcertProvider) RequestCertificate(domain string) (tlscommon.Certificate, error) {
+func (s *MkcertProvider) RequestCertificate(domain string) (*tlscommon.Certificate, error) {
 	tmpDir, err := os.MkdirTemp("", "mkcert")
 	if err != nil {
-		return tlscommon.Certificate{}, err
+		return nil, err
 	}
 	defer os.RemoveAll(tmpDir)
 
@@ -34,18 +34,18 @@ func (s *MkcertProvider) RequestCertificate(domain string) (tlscommon.Certificat
 	cmd := exec.Command("mkcert", append(args, "-cert-file", "cert.pem", "-key-file", "key.pem")...)
 	cmd.Dir = tmpDir
 	if err := cmd.Run(); err != nil {
-		return tlscommon.Certificate{}, err
+		return nil, err
 	}
 
 	certPEM, err := os.ReadFile(filepath.Join(tmpDir, "cert.pem"))
 	if err != nil {
-		return tlscommon.Certificate{}, err
+		return nil, err
 	}
 
 	keyPEM, err := os.ReadFile(filepath.Join(tmpDir, "key.pem"))
 	if err != nil {
-		return tlscommon.Certificate{}, err
+		return nil, err
 	}
 
-	return tlscommon.Certificate{CertPEM: certPEM, KeyPEM: keyPEM}, nil
+	return &tlscommon.Certificate{CertPEM: certPEM, KeyPEM: keyPEM}, nil
 }

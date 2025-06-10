@@ -1,6 +1,8 @@
 package tlscommon
 
-import "errors"
+import (
+	"errors"
+)
 
 var (
 	ErrCertificateNotFound = errors.New("certificate not found")

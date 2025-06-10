@@ -10,5 +10,5 @@ type Certificate struct {
 var ErrUnsupportedProvider = errors.New("unsupported certificate provider")
 
 type Provider interface {
-	RequestCertificate(domain string) (Certificate, error)
+	RequestCertificate(domain string) (*Certificate, error)
 }

@@ -3,6 +3,7 @@ package certstore
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"encoding/gob"
 	"pb_launcher/internal/certificates/tlscommon"
 	"time"
@@ -11,7 +12,7 @@ import (
 )
 
 func init() {
-	gob.Register(tlscommon.Certificate{})
+	gob.Register(tls.Certificate{})
 }
 
 type TlsStorerCache struct {

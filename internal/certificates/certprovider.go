@@ -63,7 +63,7 @@ func PrepareCertificates(lc fx.Lifecycle, cfg configs.Config, provider tlscommon
 		if err != nil {
 			return err
 		}
-		return storer.Store(domain, cert)
+		return storer.Store(domain, *cert)
 	}
 
 	// TODO
