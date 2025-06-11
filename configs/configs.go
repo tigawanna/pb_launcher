@@ -123,10 +123,6 @@ func (c *configs) GetDomain() string {
 	if c.Domain == "" {
 		return "pb.labenv.test"
 	}
-	host, _, err := net.SplitHostPort(c.Domain)
-	if err == nil {
-		return host
-	}
 	return strings.Split(c.Domain, ":")[0]
 }
 

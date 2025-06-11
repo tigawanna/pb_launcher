@@ -24,6 +24,8 @@ type DynamicReverseProxy struct {
 	domainDiscovery *domain.DomainServiceDiscovery
 	apiDomain       string
 	apiAddress      string
+	useHttps        bool
+	httpsPort       string
 	timeout         time.Duration
 }
 
@@ -32,13 +34,15 @@ var _ http.Handler = (*DynamicReverseProxy)(nil)
 func NewDynamicReverseProxy(
 	discovery *domain.ServiceDiscovery,
 	domainDiscovery *domain.DomainServiceDiscovery,
-	conf configs.Config,
+	cfg configs.Config,
 	pbConf *apis.ServeConfig,
 ) *DynamicReverseProxy {
 	return &DynamicReverseProxy{
 		discovery:       discovery,
 		domainDiscovery: domainDiscovery,
-		apiDomain:       conf.GetDomain(),
+		apiDomain:       cfg.GetDomain(),
+		useHttps:        cfg.UseHttps(),
+		httpsPort:       cfg.GetBindHttpsPort(),
 		apiAddress:      pbConf.HttpAddr,
 		timeout:         15 * time.Second,
 	}
@@ -108,12 +112,8 @@ func (rp *DynamicReverseProxy) buildReverseProxy(target *url.URL) *httputil.Reve
 func (rp *DynamicReverseProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), rp.timeout)
 	defer cancel()
-	host, _, err := net.SplitHostPort(r.Host)
-	if err != nil {
-		slog.Warn("invalid host format, using raw host", "host", r.Host, "error", err)
-		host = r.Host
-	}
-	target, err := rp.resolveServiceTarget(ctx, host)
+	cleanHost := strings.Split(r.Host, ":")[0]
+	target, err := rp.resolveServiceTarget(ctx, cleanHost)
 	if err != nil {
 		slog.Warn("target resolution failed", "host", r.Host, "error", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -122,5 +122,26 @@ func (rp *DynamicReverseProxy) ServeHTTP(w http.ResponseWriter, r *http.Request)
 
 	proxy := rp.buildReverseProxy(target)
 	handler := http.TimeoutHandler(proxy, rp.timeout, "proxy timeout")
-	handler.ServeHTTP(w, r.WithContext(ctx))
+
+	protoHeader := r.Header.Get("X-Forwarded-Proto")
+	protoParts := strings.Split(protoHeader, ",")
+	proto := ""
+	if len(protoParts) > 0 {
+		proto = strings.ToLower(strings.TrimSpace(protoParts[0]))
+	}
+	isRequestSecure := r.TLS != nil || proto == "https"
+
+	if isRequestSecure || !rp.useHttps {
+		handler.ServeHTTP(w, r.WithContext(ctx))
+		return
+	}
+
+	// TODO: check if the host has HTTPS certificates
+
+	redirectHost := cleanHost
+	if rp.httpsPort != "" && rp.httpsPort != "443" {
+		redirectHost = fmt.Sprintf("%s:%s", cleanHost, rp.httpsPort)
+	}
+	redirectUrl := fmt.Sprintf("https://%s%s", redirectHost, r.URL.RequestURI())
+	http.Redirect(w, r, redirectUrl, http.StatusPermanentRedirect)
 }

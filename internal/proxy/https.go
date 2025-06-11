@@ -29,16 +29,20 @@ func RunHTTPSProxy(
 		Addr: addr,
 		TLSConfig: &tls.Config{
 			GetCertificate: func(hello *tls.ClientHelloInfo) (*tls.Certificate, error) {
-				domain := hello.ServerName
-				if strings.HasSuffix(domain, baseDomain) {
-					domain = "*." + baseDomain
+				wildcardDomain := hello.ServerName
+				if strings.HasSuffix(hello.ServerName, baseDomain) {
+					wildcardDomain = "*." + baseDomain
 				}
-				cert, err := certStore.Resolve(domain)
+				cert, err := certStore.Resolve(wildcardDomain)
 				if err != nil {
-					slog.Error("failed to resolve certificate", "domain", domain, "error", err)
+					slog.Error("resolve certificate", "domain", hello.ServerName, "error", err)
 					return nil, err
 				}
 				tlsCert, err := tls.X509KeyPair(cert.CertPEM, cert.KeyPEM)
+				if err != nil {
+					slog.Error("parse certificate key pair", "domain", hello.ServerName, "error", err)
+					return nil, err
+				}
 				return &tlsCert, err
 			},
 		},
