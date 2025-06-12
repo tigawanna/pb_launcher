@@ -14,6 +14,16 @@ import (
 
 func RegisterAdminExistsRoute(app *pocketbase.PocketBase, c configs.Config) {
 	app.OnServe().BindFunc(func(se *core.ServeEvent) error {
+		se.Router.GET("/x-api/proxy_configs", func(e *core.RequestEvent) error {
+			response := map[string]any{
+				"use_https":   c.UseHttps(),
+				"http_port":   c.GetBindPort(),
+				"https_port":  c.GetBindHttpsPort(),
+				"base_domain": c.GetDomain(),
+			}
+			return e.JSON(http.StatusOK, response)
+		})
+
 		se.Router.GET("/x-api/setup/admin-exists", func(e *core.RequestEvent) error {
 			total, err := app.CountRecords(core.CollectionNameSuperusers, dbx.Not(dbx.HashExp{
 				"email": core.DefaultInstallerEmail,

@@ -94,13 +94,23 @@ export const releaseService = {
     });
   },
 
-  buildServiceUrl(id: string): string {
+  getBaseParts() {
     const url = base_url ? new URL(base_url) : new URL(window.location.href);
     const { protocol, hostname, port } = url;
     const isDefaultPort =
       (protocol === "http:" && port === "80") ||
       (protocol === "https:" && port === "443");
     const portPart = port && !isDefaultPort ? `:${port}` : "";
+    return { protocol, hostname, portPart };
+  },
+
+  buildServiceUrl(id: string): URL {
+    const { protocol, hostname, portPart } = releaseService.getBaseParts();
+    return new URL(`${protocol}//${id}.${hostname}${portPart}`);
+  },
+
+  buildServiceStringUrl(id: string): string {
+    const { protocol, hostname, portPart } = releaseService.getBaseParts();
     return `${protocol}//${id}.${hostname}${portPart}`;
   },
 
@@ -141,7 +151,7 @@ export const releaseService = {
       id: service.id,
       name: service.name,
       status: commands.length > 0 ? "pending" : service.status,
-      url: releaseService.buildServiceUrl(service.id),
+      url: releaseService.buildServiceStringUrl(service.id),
       boot_user_email: service.boot_user_email,
       boot_user_password: service.boot_user_password,
       last_started: service.last_started,
@@ -176,7 +186,7 @@ export const releaseService = {
         id: s.id,
         name: s.name,
         status: pendingServices.has(s.id) ? "pending" : s.status,
-        url: releaseService.buildServiceUrl(s.id),
+        url: releaseService.buildServiceStringUrl(s.id),
         boot_user_email: s.boot_user_email,
         boot_user_password: s.boot_user_password,
         last_started: s.last_started,

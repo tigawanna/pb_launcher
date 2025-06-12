@@ -2,6 +2,7 @@ import { Navigate, useParams, useSearchParams } from "react-router-dom";
 import { useState } from "react";
 import { MenuIcon, XIcon } from "lucide-react";
 import { GeneralSection } from "./details_section/GeneralSection";
+import { DomainsSection } from "./details_section/DomainsSection";
 
 export const ServiceDetailPage = () => {
   const { service_id } = useParams<{ service_id: string }>();
@@ -75,9 +76,9 @@ export const ServiceDetailPage = () => {
 
       <main className="flex-1 p-4 md:p-6 overflow-auto">
         {activeSection === "general" && (
-          <div className="mb-8">
+          <div className="mb-8 ">
             <h3 className="text-lg font-semibold mb-6">General</h3>
-            <div className="px-4 py-8 bg-base-200 rounded-box">
+            <div className="md:px-4 py-6 bg-base-200 rounded-box">
               <GeneralSection service_id={service_id} />
             </div>
           </div>
@@ -86,8 +87,8 @@ export const ServiceDetailPage = () => {
         {activeSection === "domains" && (
           <div className="mb-8">
             <h3 className="text-lg font-semibold mb-6">Domains</h3>
-            <div className="px-4 py-8 bg-base-200 rounded-box">
-              Panel for domain configuration
+            <div className="md:px-4 rounded-box">
+              <DomainsSection service_id={service_id} />
             </div>
           </div>
         )}
