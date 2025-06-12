@@ -3,8 +3,13 @@ import { NavLink, Outlet } from "react-router-dom";
 import { Server, User, LogOut, Settings } from "lucide-react";
 import { useConfirmModal } from "../hooks/useConfirmModal";
 import { authService } from "../services/auth";
+import { useViewportHeight } from "../hooks/useViewportHeight";
+
+export const DASHBOARD_LAYOUT_APP_BAR_HEIGHT = 56;
 
 export const DashboardLayout = ({ children }: PropsWithChildren) => {
+  const height = useViewportHeight();
+
   const confirm = useConfirmModal();
 
   const logout = async () => {
@@ -17,8 +22,11 @@ export const DashboardLayout = ({ children }: PropsWithChildren) => {
   };
 
   return (
-    <div className="min-h-screen bg-base-200 flex flex-col items-center">
-      <header className="w-full bg-base-100 shadow-sm">
+    <div style={{ height }} className="bg-base-200 flex flex-col items-center">
+      <header
+        style={{ height: DASHBOARD_LAYOUT_APP_BAR_HEIGHT }}
+        className="w-full bg-base-100 shadow-sm"
+      >
         <div className="mx-auto w-full px-4 py-3 flex items-center justify-between">
           <NavLink
             to="/"
@@ -54,7 +62,12 @@ export const DashboardLayout = ({ children }: PropsWithChildren) => {
         </div>
       </header>
 
-      <main className="w-full flex-1 px-4 py-6">{children || <Outlet />}</main>
+      <main
+        style={{ height: height - DASHBOARD_LAYOUT_APP_BAR_HEIGHT }}
+        className="w-full flex-1 px-4 py-6"
+      >
+        {children || <Outlet />}
+      </main>
     </div>
   );
 };

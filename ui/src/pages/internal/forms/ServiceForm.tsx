@@ -7,12 +7,13 @@ import {
   SelectField,
   type SelectFieldOption,
 } from "../../../components/fields/SelectField";
-import { releaseService } from "../../../services/release";
+import { releaseService, type ServiceDto } from "../../../services/release";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useMemo, type FC } from "react";
 import { useModal } from "../../../components/modal/hook";
 import toast from "react-hot-toast";
 import { getErrorMessage } from "../../../utils/errors";
+import classNames from "classnames";
 
 const schema = object({
   name: stringRequired(), // Name of the new PocketBase instance
@@ -21,12 +22,20 @@ const schema = object({
 });
 
 type Props = {
+  record?: ServiceDto;
   onSaveRecord?: () => void;
+  width?: number;
 };
 
-export const ServiceForm: FC<Props> = ({ onSaveRecord }) => {
+export const ServiceForm: FC<Props> = ({ onSaveRecord, record, width }) => {
   const { closeModal } = useModal();
-  const form = useCustomForm(schema);
+  const form = useCustomForm(schema, {
+    defaultValues: {
+      name: record?.name,
+      instanceSource: record?.release_id,
+      restartPolicy: record?.restart_policy ?? "on-failure",
+    },
+  });
 
   const releasesQuery = useQuery({
     queryKey: ["releases"],
@@ -52,19 +61,36 @@ export const ServiceForm: FC<Props> = ({ onSaveRecord }) => {
     onError: error => toast.error(getErrorMessage(error)),
   });
 
+  const updateInstanceMutation = useMutation({
+    mutationFn: releaseService.updateServiceInstance,
+    onSuccess: () => {
+      toast.success("Service updated successfully");
+      closeModal();
+      onSaveRecord?.();
+    },
+    onError: error => toast.error(getErrorMessage(error)),
+  });
+
   const handleFormSubmit = form.handleSubmit(
     ({ instanceSource, name, restartPolicy }) => {
-      createInstanceMutation.mutate({
-        name,
-        release: instanceSource,
-        restart_policy: restartPolicy,
-      });
+      if (record == null)
+        createInstanceMutation.mutate({
+          name,
+          release: instanceSource,
+          restart_policy: restartPolicy,
+        });
+      else
+        updateInstanceMutation.mutate({
+          id: record.id,
+          name,
+          release: instanceSource,
+          restart_policy: restartPolicy,
+        });
     },
   );
-
   return (
-    <div className="w-[360px]">
-      <form onSubmit={handleFormSubmit} className="space-y-4">
+    <div style={{ width: width }}>
+      <form onSubmit={handleFormSubmit} className="space-y-5">
         <InputField
           label="Instance Name"
           registration={form.register("name")}
@@ -80,6 +106,7 @@ export const ServiceForm: FC<Props> = ({ onSaveRecord }) => {
           registration={form.register("instanceSource")}
           autoComplete="off"
           error={form.formState.errors.instanceSource}
+          disabled={record != null}
         />
 
         <SelectField
@@ -92,9 +119,18 @@ export const ServiceForm: FC<Props> = ({ onSaveRecord }) => {
           autoComplete="off"
           error={form.formState.errors.restartPolicy}
         />
-
-        <div className="form-control mt-6">
-          <Button type="submit" label="Guardar" loading={false} />
+        <div
+          className={classNames("mt-8", {
+            "flex justify-end": width == null || width > 400,
+          })}
+        >
+          <div
+            className={classNames("form-control", {
+              "w-[200px]": width == null || width > 400,
+            })}
+          >
+            <Button type="submit" label="Guardar" loading={false} />
+          </div>
         </div>
       </form>
     </div>

@@ -96,6 +96,7 @@ export const ServicesPage = () => {
     openModal(
       <ServiceForm
         onSaveRecord={() => setTimeout(() => servicesQuery.refetch())}
+        width={360}
       />,
       {
         title: "Create Service",

@@ -161,15 +161,18 @@ export const ServiceCard: FC<Props> = ({
           <div className="flex justify-between">
             <span className="font-medium">Status:</span>
             <span
-              className={`badge badge-sm ${
-                service.status === "running"
-                  ? "badge-success"
-                  : service.status === "pending" || service.status === "idle"
-                    ? "badge-warning"
-                    : service.status === "failure"
-                      ? "badge-error"
-                      : "badge-neutral"
-              }`}
+              className={classNames("badge badge-sm", {
+                "badge-success": service.status === "running",
+                "badge-warning":
+                  service.status === "pending" || service.status === "idle",
+                "badge-error": service.status === "failure",
+                "badge-neutral": ![
+                  "running",
+                  "pending",
+                  "idle",
+                  "failure",
+                ].includes(service.status),
+              })}
             >
               {service.status.charAt(0).toUpperCase() + service.status.slice(1)}
             </span>

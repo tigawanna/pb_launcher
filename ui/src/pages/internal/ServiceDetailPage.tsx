@@ -20,7 +20,7 @@ export const ServiceDetailPage = () => {
 
   if (service_id == null || service_id === "") return <Navigate to={"/"} />;
   return (
-    <div className="flex flex-col md:flex-row bg-base-100 text-base-content">
+    <div className="flex h-full flex-col md:flex-row bg-base-100 text-base-content">
       <div className="md:hidden p-4 flex justify-end items-center border-b border-base-300">
         <button
           className="btn btn-ghost"
@@ -76,8 +76,8 @@ export const ServiceDetailPage = () => {
       <main className="flex-1 p-4 md:p-6 overflow-auto">
         {activeSection === "general" && (
           <div className="mb-8">
-            <h3 className="text-lg font-semibold mb-2">General</h3>
-            <div className="p-4 bg-base-200 rounded-box">
+            <h3 className="text-lg font-semibold mb-6">General</h3>
+            <div className="px-4 py-8 bg-base-200 rounded-box">
               <GeneralSection service_id={service_id} />
             </div>
           </div>
@@ -85,8 +85,8 @@ export const ServiceDetailPage = () => {
 
         {activeSection === "domains" && (
           <div className="mb-8">
-            <h3 className="text-lg font-semibold mb-2">Domains</h3>
-            <div className="p-4 bg-base-200 rounded-box">
+            <h3 className="text-lg font-semibold mb-6">Domains</h3>
+            <div className="px-4 py-8 bg-base-200 rounded-box">
               Panel for domain configuration
             </div>
           </div>
@@ -94,8 +94,8 @@ export const ServiceDetailPage = () => {
 
         {activeSection === "logs" && (
           <div className="mb-8">
-            <h3 className="text-lg font-semibold mb-2">Logs</h3>
-            <div className="p-4 bg-base-200 rounded-box">
+            <h3 className="text-lg font-semibold mb-6">Logs</h3>
+            <div className="px-4 py-8 bg-base-200 rounded-box">
               Logs viewer placeholder
             </div>
           </div>
@@ -103,8 +103,10 @@ export const ServiceDetailPage = () => {
 
         {activeSection === "settings" && (
           <div className="mb-8">
-            <h3 className="text-lg font-semibold mb-2">Settings</h3>
-            <div className="p-4 bg-base-200 rounded-box">Settings panel</div>
+            <h3 className="text-lg font-semibold mb-6">Settings</h3>
+            <div className="px-4 py-8 bg-base-200 rounded-box">
+              Settings panel
+            </div>
           </div>
         )}
       </main>
