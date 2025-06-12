@@ -10,10 +10,12 @@ import { ServiceCard } from "./components/ServiceCard";
 import { useConfirmModal } from "../../hooks/useConfirmModal";
 import { getErrorMessage } from "../../utils/errors";
 import classNames from "classnames";
+import { useNavigate } from "react-router-dom";
 
 const STATUS_FILTER_KEY = "pb-dashboard-status-filter";
 type TStatus = "all" | "running" | "stopped";
 export const ServicesPage = () => {
+  const navigate = useNavigate();
   const { openModal } = useModal();
   const confirm = useConfirmModal();
 
@@ -101,17 +103,7 @@ export const ServicesPage = () => {
     );
   };
 
-  const openEditServiceModal = (service: ServiceDto) => {
-    openModal(
-      <ServiceForm
-        record={service}
-        onSaveRecord={() => setTimeout(() => servicesQuery.refetch())}
-      />,
-      {
-        title: "Edit Service",
-      },
-    );
-  };
+  const openDetailsService = (service: ServiceDto) => navigate(service.id);
 
   return (
     <div className="space-y-6">
@@ -163,7 +155,7 @@ export const ServicesPage = () => {
           <ServiceCard
             key={service.id}
             service={service}
-            onEdit={() => openEditServiceModal(service)}
+            onDetails={() => openDetailsService(service)}
             onDelete={() => handleDeleteService(service.id)}
             onStart={() => handleStartService(service.id)}
             onStop={() => handleStopService(service.id)}

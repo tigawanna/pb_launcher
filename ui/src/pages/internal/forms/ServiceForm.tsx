@@ -7,7 +7,7 @@ import {
   SelectField,
   type SelectFieldOption,
 } from "../../../components/fields/SelectField";
-import { releaseService, type ServiceDto } from "../../../services/release";
+import { releaseService } from "../../../services/release";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useMemo, type FC } from "react";
 import { useModal } from "../../../components/modal/hook";
@@ -21,19 +21,12 @@ const schema = object({
 });
 
 type Props = {
-  record?: ServiceDto;
   onSaveRecord?: () => void;
 };
 
-export const ServiceForm: FC<Props> = ({ onSaveRecord, record }) => {
+export const ServiceForm: FC<Props> = ({ onSaveRecord }) => {
   const { closeModal } = useModal();
-  const form = useCustomForm(schema, {
-    defaultValues: {
-      name: record?.name,
-      instanceSource: record?.release_id,
-      restartPolicy: record?.restart_policy ?? "on-failure",
-    },
-  });
+  const form = useCustomForm(schema);
 
   const releasesQuery = useQuery({
     queryKey: ["releases"],
@@ -59,31 +52,13 @@ export const ServiceForm: FC<Props> = ({ onSaveRecord, record }) => {
     onError: error => toast.error(getErrorMessage(error)),
   });
 
-  const updateInstanceMutation = useMutation({
-    mutationFn: releaseService.updateServiceInstance,
-    onSuccess: () => {
-      toast.success("Service updated successfully");
-      closeModal();
-      onSaveRecord?.();
-    },
-    onError: error => toast.error(getErrorMessage(error)),
-  });
-
   const handleFormSubmit = form.handleSubmit(
     ({ instanceSource, name, restartPolicy }) => {
-      if (record == null)
-        createInstanceMutation.mutate({
-          name,
-          release: instanceSource,
-          restart_policy: restartPolicy,
-        });
-      else
-        updateInstanceMutation.mutate({
-          id: record.id,
-          name,
-          release: instanceSource,
-          restart_policy: restartPolicy,
-        });
+      createInstanceMutation.mutate({
+        name,
+        release: instanceSource,
+        restart_policy: restartPolicy,
+      });
     },
   );
 
@@ -105,7 +80,6 @@ export const ServiceForm: FC<Props> = ({ onSaveRecord, record }) => {
           registration={form.register("instanceSource")}
           autoComplete="off"
           error={form.formState.errors.instanceSource}
-          disabled={record != null}
         />
 
         <SelectField

@@ -67,6 +67,7 @@ export const releaseService = {
       version: r.version,
     }));
   },
+
   createServiceInstance: async (data: {
     name: string;
     release: string;
@@ -103,6 +104,56 @@ export const releaseService = {
     return `${protocol}//${id}.${hostname}${portPart}`;
   },
 
+  serviceFields: [
+    "id",
+    "name",
+    "status",
+    "boot_user_email",
+    "boot_user_password",
+    "last_started",
+    "restart_policy",
+    "error_message",
+    "created",
+    "release",
+    "expand.release.id",
+    "expand.release.version",
+    "expand.release.expand.repository.name",
+  ].join(","),
+
+  fetchServiceByID: async (serviceID: string): Promise<ServiceDto> => {
+    const [service, commands] = await Promise.all([
+      pb
+        .collection(SERVICES_COLLECTION)
+        .getOne<
+          Omit<_Service, "repository" | "release_id" | "release_version">
+        >(serviceID, {
+          filter: `deleted=""`,
+          expand: "release.repository",
+          fields: releaseService.serviceFields,
+        }),
+
+      pb.collection(COMANDS_COLLECTION).getFullList<{ service: string }>({
+        fields: "service",
+        filter: `status="pending"&&service="${serviceID}"`,
+      }),
+    ]);
+    return {
+      id: service.id,
+      name: service.name,
+      status: commands.length > 0 ? "pending" : service.status,
+      url: releaseService.buildServiceUrl(service.id),
+      boot_user_email: service.boot_user_email,
+      boot_user_password: service.boot_user_password,
+      last_started: service.last_started,
+      restart_policy: service.restart_policy,
+      error_message: service.error_message,
+      created: service.created,
+      repository: service.expand.release.expand.repository.name,
+      release_id: service.expand.release.id,
+      release_version: service.expand.release.version,
+    };
+  },
+
   fetchAllServices: async (): Promise<ServiceDto[]> => {
     const [services, commands] = await Promise.all([
       pb
@@ -112,21 +163,7 @@ export const releaseService = {
         >({
           filter: `deleted=""`,
           expand: "release.repository",
-          fields: [
-            "id",
-            "name",
-            "status",
-            "boot_user_email",
-            "boot_user_password",
-            "last_started",
-            "restart_policy",
-            "error_message",
-            "created",
-            "release",
-            "expand.release.id",
-            "expand.release.version",
-            "expand.release.expand.repository.name",
-          ].join(","),
+          fields: releaseService.serviceFields,
         }),
       pb.collection(COMANDS_COLLECTION).getFullList<{ service: string }>({
         fields: "service",
