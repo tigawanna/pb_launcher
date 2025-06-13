@@ -95,7 +95,12 @@ export const releaseService = {
   },
 
   getBaseParts() {
-    const url = base_url ? new URL(base_url) : new URL(window.location.href);
+    let url;
+    try {
+      url = base_url ? new URL(base_url) : new URL(window.location.href);
+    } catch {
+      url = new URL(window.location.href);
+    }
     const { protocol, hostname, port } = url;
     const isDefaultPort =
       (protocol === "http:" && port === "80") ||
