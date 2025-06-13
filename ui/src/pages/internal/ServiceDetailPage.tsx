@@ -86,7 +86,7 @@ export const ServiceDetailPage = () => {
 
         {activeSection === "domains" && (
           <div className="mb-8">
-            <h3 className="text-lg font-semibold mb-6">Domains</h3>
+            <h3 className="text-lg font-semibold mb-4">Domains</h3>
             <div className="md:px-4 rounded-box">
               <DomainsSection service_id={service_id} />
             </div>

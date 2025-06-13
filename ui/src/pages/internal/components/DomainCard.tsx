@@ -1,7 +1,9 @@
 import classNames from "classnames";
-import { ExternalLink, ShieldCheck, Trash2 } from "lucide-react";
-import type { FC } from "react";
-const statusStyles: Record<Domain["status"], string> = {
+import { ExternalLink, Pencil, ShieldCheck, Trash2 } from "lucide-react";
+import { useMemo, type FC } from "react";
+import type { DomainDto } from "../../../services/services_domain";
+
+const statusStyles: Record<string, string> = {
   active: "text-success",
   pending: "text-info",
   failure: "text-error",
@@ -9,19 +11,31 @@ const statusStyles: Record<Domain["status"], string> = {
   renewal: "text-accent",
 };
 
-interface Domain {
-  name: string;
-  protocol: "http" | "https";
-  status: "active" | "pending" | "failure" | "expired" | "renewal";
-}
-
 type Props = {
-  domain: Domain;
+  domain: DomainDto;
   url?: string;
   port?: string;
   readonly?: boolean;
+  onEdit?: () => void;
+  onDelete?: () => void;
 };
-export const DomainCard: FC<Props> = ({ domain, port, readonly, url }) => {
+
+export const DomainCard: FC<Props> = ({
+  domain,
+  port,
+  readonly,
+  url,
+  onEdit,
+  onDelete,
+}) => {
+  const fmtdomain = useMemo(() => {
+    return {
+      name: domain.domain,
+      protocol: domain.use_https === "yes" ? "https" : "http",
+      status: "active" as "active" | "pending", // TODO
+    };
+  }, [domain]);
+
   return (
     <div
       className={classNames(
@@ -30,13 +44,13 @@ export const DomainCard: FC<Props> = ({ domain, port, readonly, url }) => {
         "bg-base-100 dark:bg-base-200",
       )}
     >
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center mb-2">
         <div className="flex items-center gap-1 truncate pl-2">
           <span className="text-sm font-medium text-base-content dark:text-neutral-content truncate">
-            {domain.name}
+            {fmtdomain.name}
           </span>
           <a
-            href={url ?? `${domain.protocol}://${domain.name}`}
+            href={url ?? `${fmtdomain.protocol}://${fmtdomain.name}`}
             target="_blank"
             rel="noopener noreferrer"
             className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
@@ -58,7 +72,7 @@ export const DomainCard: FC<Props> = ({ domain, port, readonly, url }) => {
         <div className="flex items-center gap-6">
           <div className="flex">
             <span className="badge badge-ghost badge-xs">
-              {domain.protocol.toUpperCase()}
+              {fmtdomain.protocol.toUpperCase()}
             </span>
             <span className="badge badge-ghost badge-xs">Port: {port}</span>
           </div>
@@ -78,17 +92,26 @@ export const DomainCard: FC<Props> = ({ domain, port, readonly, url }) => {
           )}
         </div>
         {!readonly && (
-          <button
-            className={classNames(
-              "btn-xs gap-1 cursor-pointer",
-              "text-zinc-700 dark:text-zinc-200",
-              "bg-white dark:bg-zinc-800",
-              "hover:bg-zinc-100 dark:hover:bg-zinc-700",
-              "border border-zinc-300 dark:border-zinc-700",
-            )}
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
+          <div className="flex gap-6">
+            <button
+              className={classNames(
+                "btn-xs gap-1 cursor-pointer",
+                "text-zinc-700 dark:text-zinc-200",
+              )}
+              onClick={() => onEdit?.()}
+            >
+              <Pencil className="w-4 h-4" />
+            </button>
+            <button
+              className={classNames(
+                "btn-xs gap-1 cursor-pointer",
+                "text-zinc-700 dark:text-zinc-200",
+              )}
+              onClick={() => onDelete?.()}
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          </div>
         )}
       </div>
     </div>

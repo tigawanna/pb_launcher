@@ -1,9 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import type { FC } from "react";
-import { releaseService } from "../../../services/release";
 import { ServiceForm } from "../forms/ServiceForm";
 import { Navigate } from "react-router-dom";
 import classNames from "classnames";
+import { serviceService } from "../../../services/services";
+import { ErrorFallback } from "../../../components/helpers/ErrorFallback";
 
 type Props = {
   service_id: string;
@@ -12,7 +13,7 @@ type Props = {
 export const GeneralSection: FC<Props> = ({ service_id }) => {
   const serviceQuery = useQuery({
     queryKey: ["services", service_id],
-    queryFn: () => releaseService.fetchServiceByID(service_id),
+    queryFn: () => serviceService.fetchServiceByID(service_id),
     refetchOnMount: true,
   });
 
@@ -20,23 +21,19 @@ export const GeneralSection: FC<Props> = ({ service_id }) => {
     return <div className="p-4">Loading...</div>;
   }
 
-  if (serviceQuery.isError) {
+  if (serviceQuery.isError)
     return (
-      <div className="p-4">
-        <p className="text-error">Failed to load service.</p>
-        <button
-          className="btn btn-sm btn-outline mt-2"
-          onClick={() => serviceQuery.refetch()}
-        >
-          Retry
-        </button>
-      </div>
+      <ErrorFallback
+        error={serviceQuery.error}
+        onRetry={() => setTimeout(serviceQuery.refetch)}
+      />
     );
-  }
+
   if (serviceQuery.data == null) return <Navigate to={"/"} />;
   const service = serviceQuery.data;
   const status =
     service.status.charAt(0).toUpperCase() + service.status.slice(1);
+
   return (
     <div className="relative pt-4">
       <ServiceForm
