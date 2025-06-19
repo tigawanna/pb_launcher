@@ -79,6 +79,7 @@ func (p *Process) Start() error {
 	if p.options.stderr != nil {
 		cmd.Stderr = p.options.stderr
 	}
+
 	p.h.updateStatus(Starting)
 	if err := cmd.Start(); err != nil {
 		p.h.updateStatus(Stopped)
