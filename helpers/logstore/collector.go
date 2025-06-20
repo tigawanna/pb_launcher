@@ -120,7 +120,7 @@ func (s *ServiceLogDB) GetLogsByService(serviceID string, limit int) ([]ServiceL
 		SELECT id, service_id, stream, message, timestamp
 		FROM service_logs
 		WHERE service_id = {:service_id}
-		ORDER BY timestamp DESC
+		ORDER BY id DESC
 		LIMIT {:limit}
 	`
 

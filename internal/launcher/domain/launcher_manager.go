@@ -224,11 +224,12 @@ func (lm *LauncherManager) stopService(ctx context.Context, serviceID string) er
 	if err := lm.repository.MarkServiceStoped(ctx, serviceID); err != nil {
 		slog.Error("failed to mark service as stopped", "serviceID", serviceID, "error", err)
 	}
-
 	return nil
 }
 
 func (lm *LauncherManager) restartService(ctx context.Context, service models.Service) error {
+	lm.lstore.InsertLog(service.ID, logstore.StreamStdout, "Restarting service...")
+
 	if p, ok := lm.processList[service.ID]; ok && p.IsRunning() {
 		if err := lm.stopService(ctx, service.ID); err != nil {
 			slog.Error("restart failed: unable to stop service", "serviceID", service.ID, "error", err)
@@ -239,6 +240,7 @@ func (lm *LauncherManager) restartService(ctx context.Context, service models.Se
 		slog.Error("restart failed: unable to start service", "serviceID", service.ID, "error", err)
 		return err
 	}
+	lm.lstore.InsertLog(service.ID, logstore.StreamStdout, "Service restarted successfully")
 	return nil
 }
 
