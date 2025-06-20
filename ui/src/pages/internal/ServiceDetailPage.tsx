@@ -3,6 +3,7 @@ import { useState } from "react";
 import { MenuIcon, XIcon } from "lucide-react";
 import { GeneralSection } from "./details_section/GeneralSection";
 import { DomainsSection } from "./details_section/DomainsSection";
+import { ServiceLogsSection } from "./details_section/ServiceLogsSection";
 
 export const ServiceDetailPage = () => {
   const { service_id } = useParams<{ service_id: string }>();
@@ -96,8 +97,8 @@ export const ServiceDetailPage = () => {
         {activeSection === "logs" && (
           <div className="mb-8">
             <h3 className="text-lg font-semibold mb-6">Logs</h3>
-            <div className="px-4 py-8 bg-base-200 rounded-box">
-              Logs viewer placeholder
+            <div className="px-4 py-4 bg-base-200 rounded-box">
+              <ServiceLogsSection service_id={service_id} />
             </div>
           </div>
         )}

@@ -1,3 +1,5 @@
+import { joinUrls } from "../utils/url";
+import { HttpError } from "./client/errors";
 import { pb } from "./client/pb";
 import { COMANDS_COLLECTION } from "./release";
 const base_url = import.meta.env.VITE_BASE_URL ?? "/";
@@ -35,6 +37,15 @@ interface _Service {
     };
   };
 }
+
+export type ServiceLog = {
+  id: number;
+  service_id: string;
+  stream: "stdout" | "stderr";
+  message: string;
+  timestamp: string; // ISO 8601 format
+};
+
 export const SERVICES_COLLECTION = "services";
 
 export type ServiceDto = Omit<_Service, "expand">;
@@ -170,15 +181,43 @@ export const serviceService = {
       }),
     );
   },
+
   deleteServiceInstance: async (id: string) => {
     const services = pb.collection(SERVICES_COLLECTION);
     await services.update(id, { deleted: new Date().toJSON() });
   },
+
   executeServiceCommand: async (data: {
     service_id: string;
     action: "stop" | "start" | "restart";
   }) => {
     const comands = pb.collection(COMANDS_COLLECTION);
     await comands.create({ service: data.service_id, action: data.action });
+  },
+
+  fetchServiceLogs: async (
+    signal: AbortSignal,
+    service_id: string,
+    limit = 10,
+  ): Promise<ServiceLog[]> => {
+    const url = joinUrls(
+      pb.baseURL,
+      `/x-api/service/logs/${service_id}/${limit}`,
+    );
+    const response = await fetch(url, {
+      signal,
+      headers: { Authorization: pb.authStore.token },
+    });
+    const json = await response.json();
+
+    if (!response.ok) {
+      throw new HttpError(
+        response.status,
+        json?.message || "Unexpected error",
+        json,
+      );
+    }
+    if (json == null || !Array.isArray(json)) return [];
+    return json as ServiceLog[];
   },
 };

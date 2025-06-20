@@ -81,7 +81,7 @@ export const DomainsSection: FC<Props> = ({ service_id }) => {
     }
   };
 
-  if (domainsQuery.isLoading) {
+  if (domainsQuery.isFetching) {
     return <div className="p-4">Loading...</div>;
   }
 

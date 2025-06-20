@@ -17,7 +17,7 @@ export const GeneralSection: FC<Props> = ({ service_id }) => {
     refetchOnMount: true,
   });
 
-  if (serviceQuery.isLoading) {
+  if (serviceQuery.isFetching) {
     return <div className="p-4">Loading...</div>;
   }
 
