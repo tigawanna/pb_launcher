@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, type FC } from "react";
 import { serviceService, type ServiceLog } from "../../../services/services";
 import { ErrorFallback } from "../../../components/helpers/ErrorFallback";
 import { useViewportHeight } from "../../../hooks/useViewportHeight";
+import classNames from "classnames";
 
 type Props = {
   service_id: string;
@@ -41,6 +42,7 @@ type LogsViewProps = {
 const LogsView: FC<LogsViewProps> = ({ initLogs, service_id }) => {
   const viewHeight = useViewportHeight();
   const [logs, setLogs] = useState<ServiceLog[]>(initLogs);
+  const [connected, setConnectionState] = useState<boolean>(true);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -72,8 +74,10 @@ const LogsView: FC<LogsViewProps> = ({ initLogs, service_id }) => {
             }
           }, 10);
         }
+        setConnectionState(true);
       } catch (err) {
         console.log(err);
+        setConnectionState(false);
         if (!isActive) return;
       }
 
@@ -96,20 +100,30 @@ const LogsView: FC<LogsViewProps> = ({ initLogs, service_id }) => {
   }, []);
 
   return (
-    <div
-      style={{ height: viewHeight - 270 }}
-      className="text-base-content overflow-y-auto font-mono text-sm"
-      ref={containerRef}
-    >
-      <div className="whitespace-pre-wrap space-y-1">
-        {(Array.isArray(logs) ? logs : []).map(log => (
-          <div
-            key={log.id}
-            className={log.stream === "stderr" ? "text-error" : "text-success"}
-          >
-            {log.message}
-          </div>
-        ))}
+    <div style={{ height: viewHeight - 270 }} className="relative">
+      <div
+        className={classNames("w-4 h-4 rounded-full absolute top-0 right-0", {
+          "bg-green-600": connected,
+          "bg-red-500": !connected,
+        })}
+      />
+      <div
+        style={{ height: viewHeight - 270 }}
+        className="text-base-content overflow-y-auto font-mono text-sm"
+        ref={containerRef}
+      >
+        <div className="whitespace-pre-wrap space-y-1">
+          {(Array.isArray(logs) ? logs : []).map(log => (
+            <div
+              key={log.id}
+              className={
+                log.stream === "stderr" ? "text-error" : "text-success"
+              }
+            >
+              {log.message}
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
