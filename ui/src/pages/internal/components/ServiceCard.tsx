@@ -1,5 +1,5 @@
 import { useRef, useState, type FC } from "react";
-import type { ServiceDto } from "../../../services/release";
+import type { ServiceDto } from "../../../services/services";
 import {
   Check,
   Copy,

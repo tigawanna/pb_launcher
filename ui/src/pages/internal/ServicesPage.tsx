@@ -5,7 +5,7 @@ import { useModal } from "../../components/modal/hook";
 import { ServiceForm } from "./forms/ServiceForm";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useLocalStorage } from "@uidotdev/usehooks";
-import { releaseService, type ServiceDto } from "../../services/release";
+import { serviceService, type ServiceDto } from "../../services/services";
 import { ServiceCard } from "./components/ServiceCard";
 import { useConfirmModal } from "../../hooks/useConfirmModal";
 import { getErrorMessage } from "../../utils/errors";
@@ -21,7 +21,7 @@ export const ServicesPage = () => {
 
   const servicesQuery = useQuery({
     queryKey: ["services"],
-    queryFn: releaseService.fetchAllServices,
+    queryFn: serviceService.fetchAllServices,
     refetchInterval: 3000,
   });
 
@@ -47,7 +47,7 @@ export const ServicesPage = () => {
   }, [servicesQuery.data, query, statusFilter]);
 
   const deleteMutation = useMutation({
-    mutationFn: releaseService.deleteServiceInstance,
+    mutationFn: serviceService.deleteServiceInstance,
     onSuccess: () => setTimeout(() => servicesQuery.refetch()),
     onError: error => toast.error(getErrorMessage(error)),
   });
@@ -63,7 +63,7 @@ export const ServicesPage = () => {
   };
 
   const serviceCommandMutation = useMutation({
-    mutationFn: releaseService.executeServiceCommand,
+    mutationFn: serviceService.executeServiceCommand,
     onSuccess: () => setTimeout(() => servicesQuery.refetch()),
     onError: error => toast.error(getErrorMessage(error)),
   });

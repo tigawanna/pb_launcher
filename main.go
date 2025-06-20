@@ -5,6 +5,7 @@ import (
 	"os"
 	"path"
 	"pb_launcher/configs"
+	"pb_launcher/helpers/logstore"
 	"pb_launcher/helpers/unzip"
 	"pb_launcher/internal"
 
@@ -48,6 +49,7 @@ func createRootCommand(app core.App) *cobra.Command {
 				certificates.Module,
 				fx.Provide(configs.NewPBServeConfig),
 				fx.Provide(unzip.NewUnzip),
+				fx.Provide(logstore.NewServiceLogDB),
 				fx.Supply(app),
 				download.Module,
 				launcher.Module,

@@ -3,6 +3,7 @@ package process
 import (
 	"context"
 	"fmt"
+	"io"
 	"log/slog"
 	"os/exec"
 	"syscall"
@@ -16,12 +17,22 @@ type ProcessErrorMessage struct {
 
 type ProcessOptions struct {
 	errChan chan<- ProcessErrorMessage
+	stderr  io.Writer
+	stdout  io.Writer
 }
 
 type ProcessOption = func(*ProcessOptions)
 
 func WithErrorChan(errChan chan<- ProcessErrorMessage) ProcessOption {
 	return func(options *ProcessOptions) { options.errChan = errChan }
+}
+
+func WithStdout(w io.Writer) ProcessOption {
+	return func(options *ProcessOptions) { options.stdout = w }
+}
+
+func WithStderr(w io.Writer) ProcessOption {
+	return func(options *ProcessOptions) { options.stderr = w }
 }
 
 type Process struct {
@@ -62,8 +73,14 @@ func (p *Process) Start() error {
 	}
 
 	cmd := exec.Command(p.command, p.args...)
-	p.h.updateStatus(Starting)
+	if p.options.stdout != nil {
+		cmd.Stdout = p.options.stdout
+	}
+	if p.options.stderr != nil {
+		cmd.Stderr = p.options.stderr
+	}
 
+	p.h.updateStatus(Starting)
 	if err := cmd.Start(); err != nil {
 		p.h.updateStatus(Stopped)
 		slog.Error("failed to start process", "error", err, "process_id", p.id)

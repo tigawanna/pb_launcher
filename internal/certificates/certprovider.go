@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"pb_launcher/configs"
 	"pb_launcher/internal/certificates/certstore"
+	"pb_launcher/internal/certificates/providers/cloudflare"
 	"pb_launcher/internal/certificates/providers/mkcert"
 	"pb_launcher/internal/certificates/providers/selfsigned"
 	"pb_launcher/internal/certificates/tlscommon"
@@ -19,6 +20,8 @@ func NewProvider(c configs.Config) (tlscommon.Provider, error) {
 		return selfsigned.NewSelfSignedProvider(), nil
 	case "mkcert":
 		return mkcert.NewMkcertProvider(), nil
+	case "cloudflare":
+		return cloudflare.NewCloudflareProvider(c)
 	default:
 		return nil, fmt.Errorf("%w: %s", tlscommon.ErrUnsupportedProvider, provider)
 	}

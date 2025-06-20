@@ -7,13 +7,14 @@ import {
   SelectField,
   type SelectFieldOption,
 } from "../../../components/fields/SelectField";
-import { releaseService, type ServiceDto } from "../../../services/release";
+import { serviceService, type ServiceDto } from "../../../services/services";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useMemo, type FC } from "react";
 import { useModal } from "../../../components/modal/hook";
 import toast from "react-hot-toast";
 import { getErrorMessage } from "../../../utils/errors";
 import classNames from "classnames";
+import { releaseService } from "../../../services/release";
 
 const schema = object({
   name: stringRequired(), // Name of the new PocketBase instance
@@ -52,7 +53,7 @@ export const ServiceForm: FC<Props> = ({ onSaveRecord, record, width }) => {
   }, [releasesQuery.data]);
 
   const createInstanceMutation = useMutation({
-    mutationFn: releaseService.createServiceInstance,
+    mutationFn: serviceService.createServiceInstance,
     onSuccess: () => {
       toast.success("Service created successfully");
       closeModal();
@@ -62,7 +63,7 @@ export const ServiceForm: FC<Props> = ({ onSaveRecord, record, width }) => {
   });
 
   const updateInstanceMutation = useMutation({
-    mutationFn: releaseService.updateServiceInstance,
+    mutationFn: serviceService.updateServiceInstance,
     onSuccess: () => {
       toast.success("Service updated successfully");
       closeModal();

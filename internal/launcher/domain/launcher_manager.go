@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path"
 	"pb_launcher/configs"
+	"pb_launcher/helpers/logstore"
 	"pb_launcher/helpers/process"
 	"pb_launcher/internal/launcher/domain/models"
 	"pb_launcher/internal/launcher/domain/repositories"
@@ -23,6 +24,7 @@ type LauncherManager struct {
 	repository        repositories.ServiceRepository
 	comandsRepository repositories.CommandsRepository
 	finder            services.BinaryFinder
+	lstore            *logstore.ServiceLogDB
 	//
 	processList map[string]*process.Process
 	errChan     chan process.ProcessErrorMessage
@@ -32,12 +34,14 @@ func NewLauncherManager(
 	repository repositories.ServiceRepository,
 	comandsRepository repositories.CommandsRepository,
 	finder services.BinaryFinder,
+	lstore *logstore.ServiceLogDB,
 	c configs.Config,
 ) *LauncherManager {
 	lm := &LauncherManager{
 		repository:        repository,
 		comandsRepository: comandsRepository,
 		finder:            finder,
+		lstore:            lstore,
 		dataDir:           c.GetDataDir(),
 		ipAddress:         c.GetBindAddress(),
 		processList:       make(map[string]*process.Process),
@@ -173,6 +177,8 @@ func (lm *LauncherManager) startService(ctx context.Context, service models.Serv
 		executablePath,
 		serveArgs,
 		process.WithErrorChan(lm.errChan),
+		process.WithStdout(lm.lstore.NewWriter(service.ID, logstore.StreamStdout)),
+		process.WithStderr(lm.lstore.NewWriter(service.ID, logstore.StreamStderr)),
 	)
 
 	if err := newProcess.Start(); err != nil {
