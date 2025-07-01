@@ -5,21 +5,23 @@ import { useModal } from "../../components/modal/hook";
 import { ServiceForm } from "./forms/ServiceForm";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useLocalStorage } from "@uidotdev/usehooks";
-import { releaseService, type ServiceDto } from "../../services/release";
+import { serviceService, type ServiceDto } from "../../services/services";
 import { ServiceCard } from "./components/ServiceCard";
 import { useConfirmModal } from "../../hooks/useConfirmModal";
 import { getErrorMessage } from "../../utils/errors";
 import classNames from "classnames";
+import { useNavigate } from "react-router-dom";
 
 const STATUS_FILTER_KEY = "pb-dashboard-status-filter";
 type TStatus = "all" | "running" | "stopped";
 export const ServicesPage = () => {
+  const navigate = useNavigate();
   const { openModal } = useModal();
   const confirm = useConfirmModal();
 
   const servicesQuery = useQuery({
     queryKey: ["services"],
-    queryFn: releaseService.fetchAllServices,
+    queryFn: serviceService.fetchAllServices,
     refetchInterval: 3000,
   });
 
@@ -45,7 +47,7 @@ export const ServicesPage = () => {
   }, [servicesQuery.data, query, statusFilter]);
 
   const deleteMutation = useMutation({
-    mutationFn: releaseService.deleteServiceInstance,
+    mutationFn: serviceService.deleteServiceInstance,
     onSuccess: () => setTimeout(() => servicesQuery.refetch()),
     onError: error => toast.error(getErrorMessage(error)),
   });
@@ -61,7 +63,7 @@ export const ServicesPage = () => {
   };
 
   const serviceCommandMutation = useMutation({
-    mutationFn: releaseService.executeServiceCommand,
+    mutationFn: serviceService.executeServiceCommand,
     onSuccess: () => setTimeout(() => servicesQuery.refetch()),
     onError: error => toast.error(getErrorMessage(error)),
   });
@@ -94,6 +96,7 @@ export const ServicesPage = () => {
     openModal(
       <ServiceForm
         onSaveRecord={() => setTimeout(() => servicesQuery.refetch())}
+        width={360}
       />,
       {
         title: "Create Service",
@@ -101,17 +104,7 @@ export const ServicesPage = () => {
     );
   };
 
-  const openEditServiceModal = (service: ServiceDto) => {
-    openModal(
-      <ServiceForm
-        record={service}
-        onSaveRecord={() => setTimeout(() => servicesQuery.refetch())}
-      />,
-      {
-        title: "Edit Service",
-      },
-    );
-  };
+  const openDetailsService = (service: ServiceDto) => navigate(service.id);
 
   return (
     <div className="space-y-6">
@@ -163,7 +156,7 @@ export const ServicesPage = () => {
           <ServiceCard
             key={service.id}
             service={service}
-            onEdit={() => openEditServiceModal(service)}
+            onDetails={() => openDetailsService(service)}
             onDelete={() => handleDeleteService(service.id)}
             onStart={() => handleStartService(service.id)}
             onStop={() => handleStopService(service.id)}

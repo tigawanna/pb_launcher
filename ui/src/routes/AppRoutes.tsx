@@ -9,6 +9,7 @@ import { authService } from "../services/auth";
 import { QueryErrorView } from "../components/QueryErrorView";
 import { DashboardLayout } from "../layouts/DashboardLayout";
 import { ServicesPage } from "../pages/internal/ServicesPage";
+import { ServiceDetailPage } from "../pages/internal/ServiceDetailPage";
 
 const PrivateRoute = ({
   children,
@@ -81,7 +82,7 @@ export const AppRoutes = () => {
           />
         )}
         <Route
-          path="*"
+          path="/"
           element={
             <PrivateRoute redirectTo={isSetupDone ? "/login" : "/register"}>
               <DashboardLayout />
@@ -89,6 +90,7 @@ export const AppRoutes = () => {
           }
         >
           <Route index element={<ServicesPage />} />
+          <Route path="/:service_id" element={<ServiceDetailPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

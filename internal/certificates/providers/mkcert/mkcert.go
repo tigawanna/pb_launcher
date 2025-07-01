@@ -24,25 +24,27 @@ func (s *MkcertProvider) RequestCertificate(domain string) (*tlscommon.Certifica
 	}
 	defer os.RemoveAll(tmpDir)
 
-	args := []string{}
+	certPath := filepath.Join(tmpDir, "cert.pem")
+	keyPath := filepath.Join(tmpDir, "key.pem")
+
+	args := []string{"-cert-file", certPath, "-key-file", keyPath}
 	if after, ok := strings.CutPrefix(domain, "*."); ok {
 		args = append(args, domain, after)
 	} else {
 		args = append(args, domain)
 	}
 
-	cmd := exec.Command("mkcert", append(args, "-cert-file", "cert.pem", "-key-file", "key.pem")...)
-	cmd.Dir = tmpDir
+	cmd := exec.Command("mkcert", args...)
 	if err := cmd.Run(); err != nil {
 		return nil, err
 	}
 
-	certPEM, err := os.ReadFile(filepath.Join(tmpDir, "cert.pem"))
+	certPEM, err := os.ReadFile(certPath)
 	if err != nil {
 		return nil, err
 	}
 
-	keyPEM, err := os.ReadFile(filepath.Join(tmpDir, "key.pem"))
+	keyPEM, err := os.ReadFile(keyPath)
 	if err != nil {
 		return nil, err
 	}

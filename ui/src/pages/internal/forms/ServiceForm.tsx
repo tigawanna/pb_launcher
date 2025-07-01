@@ -7,12 +7,14 @@ import {
   SelectField,
   type SelectFieldOption,
 } from "../../../components/fields/SelectField";
-import { releaseService, type ServiceDto } from "../../../services/release";
+import { serviceService, type ServiceDto } from "../../../services/services";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useMemo, type FC } from "react";
 import { useModal } from "../../../components/modal/hook";
 import toast from "react-hot-toast";
 import { getErrorMessage } from "../../../utils/errors";
+import classNames from "classnames";
+import { releaseService } from "../../../services/release";
 
 const schema = object({
   name: stringRequired(), // Name of the new PocketBase instance
@@ -23,9 +25,10 @@ const schema = object({
 type Props = {
   record?: ServiceDto;
   onSaveRecord?: () => void;
+  width?: number;
 };
 
-export const ServiceForm: FC<Props> = ({ onSaveRecord, record }) => {
+export const ServiceForm: FC<Props> = ({ onSaveRecord, record, width }) => {
   const { closeModal } = useModal();
   const form = useCustomForm(schema, {
     defaultValues: {
@@ -50,7 +53,7 @@ export const ServiceForm: FC<Props> = ({ onSaveRecord, record }) => {
   }, [releasesQuery.data]);
 
   const createInstanceMutation = useMutation({
-    mutationFn: releaseService.createServiceInstance,
+    mutationFn: serviceService.createServiceInstance,
     onSuccess: () => {
       toast.success("Service created successfully");
       closeModal();
@@ -60,7 +63,7 @@ export const ServiceForm: FC<Props> = ({ onSaveRecord, record }) => {
   });
 
   const updateInstanceMutation = useMutation({
-    mutationFn: releaseService.updateServiceInstance,
+    mutationFn: serviceService.updateServiceInstance,
     onSuccess: () => {
       toast.success("Service updated successfully");
       closeModal();
@@ -86,10 +89,9 @@ export const ServiceForm: FC<Props> = ({ onSaveRecord, record }) => {
         });
     },
   );
-
   return (
-    <div className="w-[360px]">
-      <form onSubmit={handleFormSubmit} className="space-y-4">
+    <div style={{ width: width }}>
+      <form onSubmit={handleFormSubmit} className="space-y-5">
         <InputField
           label="Instance Name"
           registration={form.register("name")}
@@ -118,9 +120,18 @@ export const ServiceForm: FC<Props> = ({ onSaveRecord, record }) => {
           autoComplete="off"
           error={form.formState.errors.restartPolicy}
         />
-
-        <div className="form-control mt-6">
-          <Button type="submit" label="Guardar" loading={false} />
+        <div
+          className={classNames("mt-8", {
+            "flex justify-end": width == null || width > 400,
+          })}
+        >
+          <div
+            className={classNames("form-control", {
+              "w-[200px]": width == null || width > 400,
+            })}
+          >
+            <Button type="submit" label="Guardar" loading={false} />
+          </div>
         </div>
       </form>
     </div>

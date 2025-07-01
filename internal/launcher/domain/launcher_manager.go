@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path"
 	"pb_launcher/configs"
+	"pb_launcher/helpers/logstore"
 	"pb_launcher/helpers/process"
 	"pb_launcher/internal/launcher/domain/models"
 	"pb_launcher/internal/launcher/domain/repositories"
@@ -23,6 +24,7 @@ type LauncherManager struct {
 	repository        repositories.ServiceRepository
 	comandsRepository repositories.CommandsRepository
 	finder            services.BinaryFinder
+	lstore            *logstore.ServiceLogDB
 	//
 	processList map[string]*process.Process
 	errChan     chan process.ProcessErrorMessage
@@ -32,12 +34,14 @@ func NewLauncherManager(
 	repository repositories.ServiceRepository,
 	comandsRepository repositories.CommandsRepository,
 	finder services.BinaryFinder,
+	lstore *logstore.ServiceLogDB,
 	c configs.Config,
 ) *LauncherManager {
 	lm := &LauncherManager{
 		repository:        repository,
 		comandsRepository: comandsRepository,
 		finder:            finder,
+		lstore:            lstore,
 		dataDir:           c.GetDataDir(),
 		ipAddress:         c.GetBindAddress(),
 		processList:       make(map[string]*process.Process),
@@ -173,6 +177,8 @@ func (lm *LauncherManager) startService(ctx context.Context, service models.Serv
 		executablePath,
 		serveArgs,
 		process.WithErrorChan(lm.errChan),
+		process.WithStdout(lm.lstore.NewWriter(service.ID, logstore.StreamStdout)),
+		process.WithStderr(lm.lstore.NewWriter(service.ID, logstore.StreamStderr)),
 	)
 
 	if err := newProcess.Start(); err != nil {
@@ -218,11 +224,12 @@ func (lm *LauncherManager) stopService(ctx context.Context, serviceID string) er
 	if err := lm.repository.MarkServiceStoped(ctx, serviceID); err != nil {
 		slog.Error("failed to mark service as stopped", "serviceID", serviceID, "error", err)
 	}
-
 	return nil
 }
 
 func (lm *LauncherManager) restartService(ctx context.Context, service models.Service) error {
+	lm.lstore.InsertLog(service.ID, logstore.StreamStdout, "Restarting service...")
+
 	if p, ok := lm.processList[service.ID]; ok && p.IsRunning() {
 		if err := lm.stopService(ctx, service.ID); err != nil {
 			slog.Error("restart failed: unable to stop service", "serviceID", service.ID, "error", err)
@@ -233,6 +240,7 @@ func (lm *LauncherManager) restartService(ctx context.Context, service models.Se
 		slog.Error("restart failed: unable to start service", "serviceID", service.ID, "error", err)
 		return err
 	}
+	lm.lstore.InsertLog(service.ID, logstore.StreamStdout, "Service restarted successfully")
 	return nil
 }
 

@@ -3,6 +3,7 @@ package process
 import (
 	"context"
 	"fmt"
+	"io"
 	"log/slog"
 	"os/exec"
 	"syscall"
@@ -16,12 +17,22 @@ type ProcessErrorMessage struct {
 
 type ProcessOptions struct {
 	errChan chan<- ProcessErrorMessage
+	stderr  io.Writer
+	stdout  io.Writer
 }
 
 type ProcessOption = func(*ProcessOptions)
 
 func WithErrorChan(errChan chan<- ProcessErrorMessage) ProcessOption {
 	return func(options *ProcessOptions) { options.errChan = errChan }
+}
+
+func WithStdout(w io.Writer) ProcessOption {
+	return func(options *ProcessOptions) { options.stdout = w }
+}
+
+func WithStderr(w io.Writer) ProcessOption {
+	return func(options *ProcessOptions) { options.stderr = w }
 }
 
 type Process struct {
@@ -61,16 +72,23 @@ func (p *Process) Start() error {
 		return nil
 	}
 
-	cmd := exec.Command(p.command, p.args...)
-	p.h.updateStatus(Starting)
+	p.closeChan = make(chan struct{})
 
+	cmd := exec.Command(p.command, p.args...)
+	if p.options.stdout != nil {
+		cmd.Stdout = p.options.stdout
+	}
+	if p.options.stderr != nil {
+		cmd.Stderr = p.options.stderr
+	}
+
+	p.h.updateStatus(Starting)
 	if err := cmd.Start(); err != nil {
 		p.h.updateStatus(Stopped)
 		slog.Error("failed to start process", "error", err, "process_id", p.id)
 		return err
 	}
 
-	p.closeChan = make(chan struct{})
 	go p.waitForExit(cmd, p.closeChan)
 
 	p.h.replaceCommand(cmd)
@@ -114,34 +132,17 @@ func (p *Process) Stop() error {
 		slog.Error("failed to stop process", "error", err, "process_id", p.id)
 		return err
 	}
-	// brief pause to ensure waitForExit completes status update to Stopped
-	// time.Sleep(100 * time.Millisecond)
+
 	if p.closeChan != nil {
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 
 		select {
 		case <-p.closeChan:
 		case <-ctx.Done():
+			slog.Warn("process did not exit gracefully, sending SIGKILL", "process_id", p.id)
+			_ = cmd.Process.Kill()
 		}
-	}
-	return nil
-}
-
-func (p *Process) Restart() error {
-	currentState := p.Status()
-	if currentState != Running && currentState != Stopped {
-		return fmt.Errorf("restart failed: invalid process state (%v)", currentState)
-	}
-	if currentState == Running {
-		if err := p.Stop(); err != nil {
-			slog.Error("restart failed at stop", "error", err, "process_id", p.id)
-			return fmt.Errorf("restart failed at stop: %w", err)
-		}
-	}
-	if err := p.Start(); err != nil {
-		slog.Error("restart failed at start", "error", err, "process_id", p.id)
-		return fmt.Errorf("restart failed at start: %w", err)
 	}
 	return nil
 }

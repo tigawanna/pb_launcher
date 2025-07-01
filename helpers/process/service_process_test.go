@@ -1,6 +1,7 @@
 package process_test
 
 import (
+	"bytes"
 	"pb_launcher/helpers/process"
 	"testing"
 	"time"
@@ -27,31 +28,9 @@ func TestProcess_StartAndStop(t *testing.T) {
 	}
 }
 
-func TestProcess_Restart(t *testing.T) {
+func TestProcess_MultipleStartStop(t *testing.T) {
 	service := process.New("test-service", "sleep", []string{"2"})
 
-	if err := service.Start(); err != nil {
-		t.Fatalf("failed to start service: %v", err)
-	}
-
-	if err := service.Restart(); err != nil {
-		t.Fatalf("failed to restart service: %v", err)
-	}
-
-	if !service.IsRunning() {
-		t.Fatalf("service should be running after restart")
-	}
-
-	if err := service.Stop(); err != nil {
-		t.Fatalf("failed to stop service after restart: %v", err)
-	}
-}
-
-func TestProcess_AggressiveRestart(t *testing.T) {
-	errChan := make(chan process.ProcessErrorMessage, 1)
-	service := process.New("test-service", "sleep", []string{"5"}, process.WithErrorChan(errChan))
-
-	// Intentar múltiples reinicios rápidos
 	for i := range 5 {
 		if err := service.Start(); err != nil {
 			t.Fatalf("failed to start service (iteration %d): %v", i, err)
@@ -61,17 +40,6 @@ func TestProcess_AggressiveRestart(t *testing.T) {
 			t.Fatalf("service should be running (iteration %d)", i)
 		}
 
-		if err := service.Restart(); err != nil {
-			t.Fatalf("failed to restart service (iteration %d): %v", i, err)
-		}
-
-		if !service.IsRunning() {
-			t.Fatalf("service should be running after restart (iteration %d)", i)
-		}
-	}
-
-	// Simular paradas bruscas y reinicios
-	for i := range 5 {
 		if err := service.Stop(); err != nil {
 			t.Fatalf("failed to stop service (iteration %d): %v", i, err)
 		}
@@ -79,44 +47,51 @@ func TestProcess_AggressiveRestart(t *testing.T) {
 		if service.IsRunning() {
 			t.Fatalf("service should not be running after stop (iteration %d)", i)
 		}
+	}
+}
 
+func TestProcess_AggressiveStartStop(t *testing.T) {
+	errChan := make(chan process.ProcessErrorMessage, 1)
+	service := process.New("test-service", "sleep", []string{"5"}, process.WithErrorChan(errChan))
+
+	for i := range 5 {
 		if err := service.Start(); err != nil {
-			t.Fatalf("failed to restart service after stop (iteration %d): %v", i, err)
+			t.Fatalf("failed to start service (iteration %d): %v", i, err)
 		}
 
 		if !service.IsRunning() {
-			t.Fatalf("service should be running after restart (iteration %d)", i)
+			t.Fatalf("service should be running (iteration %d)", i)
+		}
+
+		if err := service.Stop(); err != nil {
+			t.Fatalf("failed to stop service (iteration %d): %v", i, err)
+		}
+
+		if service.IsRunning() {
+			t.Fatalf("service should not be running after stop (iteration %d)", i)
 		}
 	}
 
-	// Probar que el canal de errores funcione correctamente
+	if err := service.Start(); err != nil {
+		t.Fatalf("failed to start service at final phase: %v", err)
+	}
+
+	if !service.IsRunning() {
+		t.Fatalf("service should be running at final phase")
+	}
+
 	if err := service.Stop(); err != nil {
 		t.Fatalf("failed to stop service at final phase: %v", err)
 	}
 
-	// Verificar que no queden errores bloqueando el canal
+	if service.IsRunning() {
+		t.Fatalf("service should not be running after final stop")
+	}
+
 	select {
 	case err := <-errChan:
 		t.Fatalf("unexpected error received after stop: %v", err)
 	default:
-	}
-
-	// Intentar reiniciar después de detener
-	if err := service.Restart(); err != nil {
-		t.Fatalf("failed to restart service after final stop: %v", err)
-	}
-
-	if !service.IsRunning() {
-		t.Fatalf("service should be running after final restart")
-	}
-
-	// Detener finalmente
-	if err := service.Stop(); err != nil {
-		t.Fatalf("failed to stop service after aggressive testing: %v", err)
-	}
-
-	if service.IsRunning() {
-		t.Fatalf("service should not be running after final stop")
 	}
 }
 
@@ -124,12 +99,10 @@ func TestProcess_ErrorChannel(t *testing.T) {
 	errChan := make(chan process.ProcessErrorMessage, 1)
 	service := process.New("test-service", "false", nil, process.WithErrorChan(errChan))
 
-	// Iniciar el proceso que fallará inmediatamente
 	if err := service.Start(); err != nil {
 		t.Fatalf("failed to start error-prone service: %v", err)
 	}
 
-	// Verifica que el canal de errores reciba un mensaje
 	select {
 	case errMsg := <-errChan:
 		if errMsg.Error == nil {
@@ -140,13 +113,59 @@ func TestProcess_ErrorChannel(t *testing.T) {
 		t.Fatalf("timeout waiting for error message")
 	}
 
-	// Asegurar que el servicio se detuvo correctamente
 	if service.IsRunning() {
 		t.Fatalf("service should not be running after error")
 	}
 
-	// Limpiar al final
 	if err := service.Stop(); err != nil {
 		t.Fatalf("failed to stop service after error: %v", err)
+	}
+}
+
+func TestProcess_StartDoesNotRestart(t *testing.T) {
+	service := process.New("test-service", "sleep", []string{"2"})
+
+	if err := service.Start(); err != nil {
+		t.Fatalf("failed to start service: %v", err)
+	}
+
+	if !service.IsRunning() {
+		t.Fatalf("service should be running")
+	}
+
+	if err := service.Start(); err != nil {
+		t.Fatalf("start called on running service should return nil, got: %v", err)
+	}
+
+	if err := service.Stop(); err != nil {
+		t.Fatalf("failed to stop service: %v", err)
+	}
+}
+
+func TestProcess_StopWhenAlreadyStopped(t *testing.T) {
+	service := process.New("test-service", "sleep", []string{"1"})
+
+	if err := service.Stop(); err != nil {
+		t.Fatalf("stop on already stopped service should return nil, got: %v", err)
+	}
+}
+
+func TestProcess_StdoutAndStderr(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	service := process.New("test-service", "echo", []string{"hello world"},
+		process.WithStdout(&stdout), process.WithStderr(&stderr))
+
+	if err := service.Start(); err != nil {
+		t.Fatalf("failed to start service: %v", err)
+	}
+
+	time.Sleep(1 * time.Second)
+
+	if got := stdout.String(); got != "hello world\n" {
+		t.Fatalf("unexpected stdout, got: %q", got)
+	}
+
+	if stderr.Len() != 0 {
+		t.Fatalf("unexpected stderr output, got: %q", stderr.String())
 	}
 }

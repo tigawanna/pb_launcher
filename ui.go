@@ -25,7 +25,7 @@ var allowedExts = map[string]bool{
 	".woff2": true,
 }
 
-func ServeUI(app *pocketbase.PocketBase) {
+func ServeEmbeddedUI(app *pocketbase.PocketBase) {
 	app.OnServe().BindFunc(func(se *core.ServeEvent) error {
 		se.Router.Any("/{path...}", func(e *core.RequestEvent) error {
 			reqPath := strings.TrimLeft(path.Clean(e.Request.URL.Path), "/")

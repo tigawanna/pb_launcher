@@ -5,6 +5,8 @@ import (
 	"os"
 	"path"
 	"pb_launcher/configs"
+	"pb_launcher/helpers/logstore"
+	"pb_launcher/helpers/serialexecutor"
 	"pb_launcher/helpers/unzip"
 	"pb_launcher/internal"
 
@@ -48,12 +50,21 @@ func createRootCommand(app core.App) *cobra.Command {
 				certificates.Module,
 				fx.Provide(configs.NewPBServeConfig),
 				fx.Provide(unzip.NewUnzip),
+				fx.Provide(logstore.NewServiceLogDB),
+				fx.Provide(serialexecutor.NewSequentialExecutor),
 				fx.Supply(app),
 				download.Module,
 				launcher.Module,
 				proxy.Module,
 				internal.Module, // hooks
-				fx.Invoke(Bootstrap, ServeUI),
+				fx.Invoke(
+					StartApiServer,
+					ServeEmbeddedUI,
+					// Tasks
+					RegisterBinaryReleaseSync,
+					RegisterLauncherRunner,
+					RunSequentialExecutor, // Start Stask Runner
+				),
 			).Run()
 		},
 	}

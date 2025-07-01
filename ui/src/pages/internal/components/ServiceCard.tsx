@@ -1,5 +1,5 @@
 import { useRef, useState, type FC } from "react";
-import type { ServiceDto } from "../../../services/release";
+import type { ServiceDto } from "../../../services/services";
 import {
   Check,
   Copy,
@@ -16,8 +16,8 @@ import { DefaultCredentialsCard } from "./DefaultCredentialsCard";
 
 type Props = {
   service: ServiceDto;
+  onDetails: () => void;
   onDelete: () => void;
-  onEdit: () => void;
   onStart: () => void;
   onStop: () => void;
   onRestart: () => void;
@@ -25,8 +25,8 @@ type Props = {
 
 export const ServiceCard: FC<Props> = ({
   service,
+  onDetails,
   onDelete,
-  onEdit,
   onRestart,
   onStart,
   onStop,
@@ -78,10 +78,10 @@ export const ServiceCard: FC<Props> = ({
               <li>
                 <button
                   className="flex items-center gap-2 w-full justify-start hover:bg-base-200 text-primary"
-                  onClick={() => executeAfterBlur(onEdit)}
+                  onClick={() => executeAfterBlur(onDetails)}
                 >
                   <Pencil className="w-4 h-4" />
-                  Edit
+                  Details
                 </button>
               </li>
               <li>
@@ -161,15 +161,18 @@ export const ServiceCard: FC<Props> = ({
           <div className="flex justify-between">
             <span className="font-medium">Status:</span>
             <span
-              className={`badge badge-sm ${
-                service.status === "running"
-                  ? "badge-success"
-                  : service.status === "pending" || service.status === "idle"
-                    ? "badge-warning"
-                    : service.status === "failure"
-                      ? "badge-error"
-                      : "badge-neutral"
-              }`}
+              className={classNames("badge badge-sm", {
+                "badge-success": service.status === "running",
+                "badge-warning":
+                  service.status === "pending" || service.status === "idle",
+                "badge-error": service.status === "failure",
+                "badge-neutral": ![
+                  "running",
+                  "pending",
+                  "idle",
+                  "failure",
+                ].includes(service.status),
+              })}
             >
               {service.status.charAt(0).toUpperCase() + service.status.slice(1)}
             </span>
