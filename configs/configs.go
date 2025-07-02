@@ -45,10 +45,12 @@ type tls_configs struct {
 var _ TlsConfig = (*tls_configs)(nil)
 
 func (c *tls_configs) GetProvider() string {
-	if c.Provider == "" {
+	provider := strings.TrimSpace(c.Provider)
+	if provider == "" {
+		slog.Warn("TLS provider is empty, using default 'selfsigned'")
 		return "selfsigned"
 	}
-	return strings.TrimSpace(c.Provider)
+	return provider
 }
 
 func (c *tls_configs) GetProp(key string) (string, bool) {
@@ -74,7 +76,7 @@ type configs struct {
 	HttpsPort         string `mapstructure:"https_port"`          // default: 8443
 	MinCertificateTtl string `mapstructure:"min_certificate_ttl"` // default: 30d
 
-	Tls tls_configs `mapstructure:"tls"`
+	Tls tls_configs `mapstructure:"cert"`
 }
 
 var _ Config = (*configs)(nil)
