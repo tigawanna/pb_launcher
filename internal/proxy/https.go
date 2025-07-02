@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"pb_launcher/configs"
 	"pb_launcher/internal/certificates/tlscommon"
-	"strings"
+	"pb_launcher/utils/domainutil"
 
 	"go.uber.org/fx"
 )
@@ -22,18 +22,18 @@ func RunHTTPSProxy(
 	mux := http.NewServeMux()
 	mux.Handle("/", proxyHandler)
 
-	baseDomain := cfg.GetDomain()
+	wildcardDomain := domainutil.ToWildcardDomain(cfg.GetDomain())
 
 	addr := fmt.Sprintf("%s:%s", cfg.GetBindAddress(), cfg.GetBindHttpsPort())
 	server := &http.Server{
 		Addr: addr,
 		TLSConfig: &tls.Config{
 			GetCertificate: func(hello *tls.ClientHelloInfo) (*tls.Certificate, error) {
-				wildcardDomain := hello.ServerName
-				if strings.HasSuffix(hello.ServerName, baseDomain) {
-					wildcardDomain = "*." + baseDomain
+				domain := hello.ServerName
+				if domainutil.SubdomainMatchesWildcard(domain, wildcardDomain) {
+					domain = wildcardDomain
 				}
-				cert, err := certStore.Resolve(wildcardDomain)
+				cert, err := certStore.Resolve(domain)
 				if err != nil {
 					slog.Error("resolve certificate", "domain", hello.ServerName, "error", err)
 					return nil, err

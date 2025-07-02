@@ -9,7 +9,7 @@ import (
 	"pb_launcher/configs"
 	"pb_launcher/helpers/serialexecutor"
 	"pb_launcher/internal/certificates/tlscommon"
-	"pb_launcher/utils"
+	"pb_launcher/utils/domainutil"
 	"sync/atomic"
 )
 
@@ -23,19 +23,19 @@ func RegisterCertificateAutoRenewal(
 		return nil
 	}
 
-	domain := utils.NormalizeWildcardDomain(cfg.GetDomain())
+	wildcardDomain := domainutil.ToWildcardDomain(cfg.GetDomain())
 	var initialExecutionComplete atomic.Bool
 
 	certificateTask := serialexecutor.NewTask(
 		func(ctx context.Context) {
 			defer initialExecutionComplete.Store(true)
 
-			currentCert, err := store.Resolve(domain)
+			currentCert, err := store.Resolve(wildcardDomain)
 			if err != nil &&
 				!errors.Is(err, tlscommon.ErrCertificateNotFound) &&
 				!errors.Is(err, tlscommon.ErrInvalidPEM) &&
 				!errors.Is(err, tlscommon.ErrCertificateExpired) {
-				slog.Error("unexpected error resolving certificate", "domain", domain, "error", err)
+				slog.Error("unexpected error resolving certificate", "domain", wildcardDomain, "error", err)
 				if !initialExecutionComplete.Load() {
 					os.Exit(1)
 				}
@@ -46,24 +46,24 @@ func RegisterCertificateAutoRenewal(
 				return
 			}
 
-			newCert, err := provider.RequestCertificate(domain)
+			newCert, err := provider.RequestCertificate(wildcardDomain)
 			if err != nil {
-				slog.Error("failed to request certificate", "domain", domain, "error", err)
+				slog.Error("failed to request certificate", "domain", wildcardDomain, "error", err)
 				if !initialExecutionComplete.Load() {
 					os.Exit(1)
 				}
 				return
 			}
 
-			if err := store.Store(domain, *newCert); err != nil {
-				slog.Error("failed to store certificate", "domain", domain, "error", err)
+			if err := store.Store(wildcardDomain, *newCert); err != nil {
+				slog.Error("failed to store certificate", "domain", wildcardDomain, "error", err)
 				if !initialExecutionComplete.Load() {
 					os.Exit(1)
 				}
 				return
 			}
 
-			slog.Info("certificate successfully requested and stored", "domain", domain)
+			slog.Info("certificate successfully requested and stored", "domain", wildcardDomain)
 		},
 		cfg.GetCertificateCheckInterval(),
 		math.MaxInt,
