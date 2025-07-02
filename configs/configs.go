@@ -21,6 +21,7 @@ type TlsConfig interface {
 type Config interface {
 	GetReleaseSyncInterval() time.Duration
 	GetCommandCheckInterval() time.Duration
+	GetCertificateCheckInterval() time.Duration
 
 	GetDownloadDir() string
 	GetDataDir() string
@@ -58,23 +59,26 @@ func (c *tls_configs) GetProp(key string) (string, bool) {
 }
 
 type configs struct {
-	ReleaseSyncInterval  string      `mapstructure:"release_sync_interval"`  // default: 10m
-	CommandCheckInterval string      `mapstructure:"command_check_interval"` // default: 10ms
-	DownloadDir          string      `mapstructure:"download_dir"`           // default: ./downloads
-	CertificatesDir      string      `mapstructure:"certificates_dir"`       // default: ./.certificates
-	DataDir              string      `mapstructure:"data_dir"`               // default: ./data
-	Domain               string      `mapstructure:"domain"`
-	BindAddress          string      `mapstructure:"bind_address"` // default: 127.0.0.1
-	BindPort             string      `mapstructure:"bind_port"`    // default: 8072
-	Https                bool        `mapstructure:"https"`
-	HttpsPort            string      `mapstructure:"https_port"` // default: 8443
-	Tls                  tls_configs `mapstructure:"tls"`
+	ReleaseSyncInterval      string `mapstructure:"release_sync_interval"`      // default: 10m
+	CommandCheckInterval     string `mapstructure:"command_check_interval"`     // default: 10ms
+	CertificateCheckInterval string `mapstructure:"certificate_check_interval"` // default: 1h
+
+	DownloadDir     string      `mapstructure:"download_dir"`     // default: ./downloads
+	CertificatesDir string      `mapstructure:"certificates_dir"` // default: ./.certificates
+	DataDir         string      `mapstructure:"data_dir"`         // default: ./data
+	Domain          string      `mapstructure:"domain"`
+	BindAddress     string      `mapstructure:"bind_address"` // default: 127.0.0.1
+	BindPort        string      `mapstructure:"bind_port"`    // default: 8072
+	Https           bool        `mapstructure:"https"`
+	HttpsPort       string      `mapstructure:"https_port"` // default: 8443
+	Tls             tls_configs `mapstructure:"tls"`
 }
 
 var _ Config = (*configs)(nil)
 
 const min_sync_interval = 5 * time.Minute
 const min_command_check_interval = 10 * time.Second
+const min_certificate_check_interval = time.Minute
 
 func (c *configs) GetReleaseSyncInterval() time.Duration {
 	duration, err := time.ParseDuration(c.ReleaseSyncInterval)
@@ -96,6 +100,16 @@ func (c *configs) GetCommandCheckInterval() time.Duration {
 		)
 	}
 	return max(duration, min_command_check_interval)
+}
+func (c *configs) GetCertificateCheckInterval() time.Duration {
+	duration, err := time.ParseDuration(c.CertificateCheckInterval)
+	if err != nil {
+		slog.Warn("Failed to parse certificate_check_interval",
+			slog.String("raw_value", c.CertificateCheckInterval),
+			slog.String("error", err.Error()),
+		)
+	}
+	return max(duration, min_certificate_check_interval)
 }
 
 func (c *configs) GetDownloadDir() string {
