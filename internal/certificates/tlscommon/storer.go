@@ -12,5 +12,6 @@ var (
 
 type Store interface {
 	Store(domain string, cert Certificate) error
-	Resolve(domain string) (*Certificate, error)
+
+	Resolve(domain string) (cert *Certificate, err error)
 }

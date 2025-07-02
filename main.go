@@ -61,7 +61,7 @@ func createRootCommand(app core.App) *cobra.Command {
 					StartApiServer,
 					ServeEmbeddedUI,
 					// Tasks
-					RegisterCertificateSync,
+					RegisterCertificateAutoRenewal,
 					RegisterBinaryReleaseSync,
 					RegisterLauncherRunner,
 					RunSequentialExecutor, // Start Stask Runner

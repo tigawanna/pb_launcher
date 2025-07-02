@@ -13,9 +13,9 @@ import (
 	"sync/atomic"
 )
 
-func RegisterCertificateSync(
+func RegisterCertificateAutoRenewal(
 	provider tlscommon.Provider,
-	storer tlscommon.Store,
+	store tlscommon.Store,
 	cfg configs.Config,
 	executor *serialexecutor.SequentialExecutor,
 ) error {
@@ -24,46 +24,50 @@ func RegisterCertificateSync(
 	}
 
 	domain := utils.NormalizeWildcardDomain(cfg.GetDomain())
-	var firstExecutionDone atomic.Bool
+	var initialExecutionComplete atomic.Bool
 
-	certSyncTask := serialexecutor.NewTask(
+	certificateTask := serialexecutor.NewTask(
 		func(ctx context.Context) {
-			defer firstExecutionDone.Store(true)
+			defer initialExecutionComplete.Store(true)
 
-			_, err := storer.Resolve(domain)
-			if err == nil {
-				return
-			}
-
-			if !errors.Is(err, tlscommon.ErrCertificateNotFound) &&
+			currentCert, err := store.Resolve(domain)
+			if err != nil &&
+				!errors.Is(err, tlscommon.ErrCertificateNotFound) &&
 				!errors.Is(err, tlscommon.ErrInvalidPEM) &&
 				!errors.Is(err, tlscommon.ErrCertificateExpired) {
 				slog.Error("unexpected error resolving certificate", "domain", domain, "error", err)
-				if !firstExecutionDone.Load() {
+				if !initialExecutionComplete.Load() {
 					os.Exit(1)
 				}
 				return
 			}
 
-			cert, err := provider.RequestCertificate(domain)
+			if err == nil && currentCert.Ttl > cfg.GetMinCertificateTtl() {
+				return
+			}
+
+			newCert, err := provider.RequestCertificate(domain)
 			if err != nil {
 				slog.Error("failed to request certificate", "domain", domain, "error", err)
-				if !firstExecutionDone.Load() {
+				if !initialExecutionComplete.Load() {
 					os.Exit(1)
 				}
 				return
 			}
 
-			if err := storer.Store(domain, *cert); err != nil {
+			if err := store.Store(domain, *newCert); err != nil {
 				slog.Error("failed to store certificate", "domain", domain, "error", err)
-				if !firstExecutionDone.Load() {
+				if !initialExecutionComplete.Load() {
 					os.Exit(1)
 				}
 				return
 			}
+
+			slog.Info("certificate successfully requested and stored", "domain", domain)
 		},
 		cfg.GetCertificateCheckInterval(),
 		math.MaxInt,
 	)
-	return executor.Add(certSyncTask)
+
+	return executor.Add(certificateTask)
 }

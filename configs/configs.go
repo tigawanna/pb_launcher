@@ -26,6 +26,7 @@ type Config interface {
 	GetDownloadDir() string
 	GetDataDir() string
 	GetCertificatesDir() string
+	GetMinCertificateTtl() time.Duration
 
 	GetDomain() string
 	GetBindAddress() string
@@ -63,15 +64,17 @@ type configs struct {
 	CommandCheckInterval     string `mapstructure:"command_check_interval"`     // default: 10ms
 	CertificateCheckInterval string `mapstructure:"certificate_check_interval"` // default: 1h
 
-	DownloadDir     string      `mapstructure:"download_dir"`     // default: ./downloads
-	CertificatesDir string      `mapstructure:"certificates_dir"` // default: ./.certificates
-	DataDir         string      `mapstructure:"data_dir"`         // default: ./data
-	Domain          string      `mapstructure:"domain"`
-	BindAddress     string      `mapstructure:"bind_address"` // default: 127.0.0.1
-	BindPort        string      `mapstructure:"bind_port"`    // default: 8072
-	Https           bool        `mapstructure:"https"`
-	HttpsPort       string      `mapstructure:"https_port"` // default: 8443
-	Tls             tls_configs `mapstructure:"tls"`
+	DownloadDir       string `mapstructure:"download_dir"`     // default: ./downloads
+	CertificatesDir   string `mapstructure:"certificates_dir"` // default: ./.certificates
+	DataDir           string `mapstructure:"data_dir"`         // default: ./data
+	Domain            string `mapstructure:"domain"`
+	BindAddress       string `mapstructure:"bind_address"` // default: 127.0.0.1
+	BindPort          string `mapstructure:"bind_port"`    // default: 8072
+	Https             bool   `mapstructure:"https"`
+	HttpsPort         string `mapstructure:"https_port"`          // default: 8443
+	MinCertificateTtl string `mapstructure:"min_certificate_ttl"` // default: 30d
+
+	Tls tls_configs `mapstructure:"tls"`
 }
 
 var _ Config = (*configs)(nil)
@@ -79,6 +82,7 @@ var _ Config = (*configs)(nil)
 const min_sync_interval = 5 * time.Minute
 const min_command_check_interval = 10 * time.Second
 const min_certificate_check_interval = time.Minute
+const min_certificate_ttl = 30 * 24 * time.Hour
 
 func (c *configs) GetReleaseSyncInterval() time.Duration {
 	duration, err := time.ParseDuration(c.ReleaseSyncInterval)
@@ -87,6 +91,7 @@ func (c *configs) GetReleaseSyncInterval() time.Duration {
 			slog.String("raw_value", c.ReleaseSyncInterval),
 			slog.String("error", err.Error()),
 		)
+		return min_sync_interval
 	}
 	return max(duration, min_sync_interval)
 }
@@ -98,6 +103,7 @@ func (c *configs) GetCommandCheckInterval() time.Duration {
 			slog.String("raw_value", c.CommandCheckInterval),
 			slog.String("error", err.Error()),
 		)
+		return min_command_check_interval
 	}
 	return max(duration, min_command_check_interval)
 }
@@ -108,6 +114,7 @@ func (c *configs) GetCertificateCheckInterval() time.Duration {
 			slog.String("raw_value", c.CertificateCheckInterval),
 			slog.String("error", err.Error()),
 		)
+		return min_certificate_check_interval
 	}
 	return max(duration, min_certificate_check_interval)
 }
@@ -161,6 +168,18 @@ func (c *configs) GetBindHttpsPort() string {
 		return "8443"
 	}
 	return c.HttpsPort
+}
+
+func (c *configs) GetMinCertificateTtl() time.Duration {
+	duration, err := time.ParseDuration(c.MinCertificateTtl)
+	if err != nil {
+		slog.Warn("Failed to parse min_certificate_ttl",
+			slog.String("raw_value", c.MinCertificateTtl),
+			slog.String("error", err.Error()),
+		)
+		return min_certificate_ttl
+	}
+	return max(duration, min_certificate_ttl)
 }
 
 func (c *configs) GetTlsConfig() TlsConfig { return &c.Tls }

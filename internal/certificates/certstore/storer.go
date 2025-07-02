@@ -67,6 +67,12 @@ func (s *TlsStorer) IsCertificateValid(cert *tlscommon.Certificate) error {
 		return tlscommon.ErrCertificateExpired
 	}
 
+	ttl := time.Until(parsedCert.NotAfter)
+	if ttl < 0 {
+		ttl = 0
+	}
+	cert.Ttl = ttl
+
 	return nil
 }
 
