@@ -74,7 +74,7 @@ type configs struct {
 	BindPort          string `mapstructure:"bind_port"`    // default: 8072
 	Https             bool   `mapstructure:"https"`
 	HttpsPort         string `mapstructure:"https_port"`          // default: 8443
-	MinCertificateTtl string `mapstructure:"min_certificate_ttl"` // default: 30d
+	MinCertificateTtl string `mapstructure:"min_certificate_ttl"` // default: 720h
 
 	Tls tls_configs `mapstructure:"cert"`
 }
