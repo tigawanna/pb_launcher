@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"pb_launcher/configs"
 	"pb_launcher/internal/certificates/tlscommon"
+	"pb_launcher/utils/domainutil"
 
 	"time"
 )
@@ -19,21 +20,29 @@ const (
 const FolderDateFormat = "2006-01-02_15-04-05"
 
 type TlsStorer struct {
-	rootPath string
+	rootPath    string
+	tlsProvider string
 }
 
 var _ tlscommon.Store = (*TlsStorer)(nil)
 
 func NewTlsStorer(c configs.Config) *TlsStorer {
 	return &TlsStorer{
-		rootPath: c.GetCertificatesDir(),
+		rootPath:    c.GetCertificatesDir(),
+		tlsProvider: c.GetTlsConfig().GetProvider(),
 	}
+}
+
+func (s *TlsStorer) storageRootFor(domain string) string {
+	if domainutil.IsWildcardDomain(domain) {
+		return filepath.Join(s.rootPath, s.tlsProvider)
+	}
+	return filepath.Join(s.rootPath, "_general")
 }
 
 func (s *TlsStorer) Store(domain string, cert tlscommon.Certificate) error {
 	timestamp := time.Now().Format(FolderDateFormat)
-	outputDir := filepath.Join(s.rootPath, domain, timestamp)
-
+	outputDir := filepath.Join(s.storageRootFor(domain), domain, timestamp)
 	if err := os.MkdirAll(outputDir, 0o755); err != nil {
 		return err
 	}
@@ -77,7 +86,7 @@ func (s *TlsStorer) IsCertificateValid(cert *tlscommon.Certificate) error {
 }
 
 func (s *TlsStorer) Resolve(domain string) (*tlscommon.Certificate, error) {
-	domainPath := filepath.Join(s.rootPath, domain)
+	domainPath := filepath.Join(s.storageRootFor(domain), domain)
 
 	entries, err := os.ReadDir(domainPath)
 	if err != nil {
