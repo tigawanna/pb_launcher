@@ -16,7 +16,7 @@ func RegisterAdminExistsRoute(app *pocketbase.PocketBase, c configs.Config) {
 	app.OnServe().BindFunc(func(se *core.ServeEvent) error {
 		se.Router.GET("/x-api/proxy_configs", func(e *core.RequestEvent) error {
 			response := map[string]any{
-				"use_https":   c.UseHttps(),
+				"use_https":   c.IsHttpsEnabled(),
 				"http_port":   c.GetBindPort(),
 				"https_port":  c.GetBindHttpsPort(),
 				"base_domain": c.GetDomain(),

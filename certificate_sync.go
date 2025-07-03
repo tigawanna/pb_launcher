@@ -19,7 +19,7 @@ func RegisterCertificateAutoRenewal(
 	cfg configs.Config,
 	executor *serialexecutor.SequentialExecutor,
 ) error {
-	if !cfg.UseHttps() {
+	if !cfg.IsHttpsEnabled() {
 		return nil
 	}
 

@@ -32,7 +32,9 @@ type Config interface {
 	GetBindAddress() string
 	GetBindPort() string
 
-	UseHttps() bool
+	IsHttpsEnabled() bool
+	IsHttpsRedirectDisabled() bool
+
 	GetBindHttpsPort() string
 	GetTlsConfig() TlsConfig
 }
@@ -66,15 +68,16 @@ type configs struct {
 	CommandCheckInterval     string `mapstructure:"command_check_interval"`     // default: 10ms
 	CertificateCheckInterval string `mapstructure:"certificate_check_interval"` // default: 1h
 
-	DownloadDir       string `mapstructure:"download_dir"`     // default: ./downloads
-	CertificatesDir   string `mapstructure:"certificates_dir"` // default: ./.certificates
-	DataDir           string `mapstructure:"data_dir"`         // default: ./data
-	Domain            string `mapstructure:"domain"`
-	BindAddress       string `mapstructure:"bind_address"` // default: 127.0.0.1
-	BindPort          string `mapstructure:"bind_port"`    // default: 8072
-	Https             bool   `mapstructure:"https"`
-	HttpsPort         string `mapstructure:"https_port"`          // default: 8443
-	MinCertificateTtl string `mapstructure:"min_certificate_ttl"` // default: 720h
+	DownloadDir          string `mapstructure:"download_dir"`     // default: ./downloads
+	CertificatesDir      string `mapstructure:"certificates_dir"` // default: ./.certificates
+	DataDir              string `mapstructure:"data_dir"`         // default: ./data
+	Domain               string `mapstructure:"domain"`
+	BindAddress          string `mapstructure:"bind_address"` // default: 127.0.0.1
+	BindPort             string `mapstructure:"bind_port"`    // default: 8072
+	Https                bool   `mapstructure:"https"`
+	DisableHttpsRedirect bool   `mapstructure:"disable_https_redirect"`
+	HttpsPort            string `mapstructure:"https_port"`          // default: 8443
+	MinCertificateTtl    string `mapstructure:"min_certificate_ttl"` // default: 720h
 
 	Tls tls_configs `mapstructure:"cert"`
 }
@@ -163,7 +166,8 @@ func (c *configs) GetBindPort() string {
 	return c.BindPort
 }
 
-func (c *configs) UseHttps() bool { return c.Https }
+func (c *configs) IsHttpsEnabled() bool          { return c.Https }
+func (c *configs) IsHttpsRedirectDisabled() bool { return c.DisableHttpsRedirect }
 
 func (c *configs) GetBindHttpsPort() string {
 	if c.HttpsPort == "" {

@@ -6,6 +6,7 @@ domain: pb.labenv.test
 
 # https
 https: true
+force_https: true
 https_port: "8443"
 cert:
   provider: cloudflare

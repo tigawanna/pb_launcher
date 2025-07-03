@@ -20,13 +20,14 @@ import (
 )
 
 type DynamicReverseProxy struct {
-	discovery       *domain.ServiceDiscovery
-	domainDiscovery *domain.DomainServiceDiscovery
-	apiDomain       string
-	apiAddress      string
-	useHttps        bool
-	httpsPort       string
-	timeout         time.Duration
+	discovery         *domain.ServiceDiscovery
+	domainDiscovery   *domain.DomainServiceDiscovery
+	apiDomain         string
+	apiAddress        string
+	useHttps          bool
+	skipHttpsRedirect bool
+	httpsPort         string
+	timeout           time.Duration
 }
 
 var _ http.Handler = (*DynamicReverseProxy)(nil)
@@ -38,13 +39,14 @@ func NewDynamicReverseProxy(
 	pbConf *apis.ServeConfig,
 ) *DynamicReverseProxy {
 	return &DynamicReverseProxy{
-		discovery:       discovery,
-		domainDiscovery: domainDiscovery,
-		apiDomain:       cfg.GetDomain(),
-		useHttps:        cfg.UseHttps(),
-		httpsPort:       cfg.GetBindHttpsPort(),
-		apiAddress:      pbConf.HttpAddr,
-		timeout:         15 * time.Second,
+		discovery:         discovery,
+		domainDiscovery:   domainDiscovery,
+		apiDomain:         cfg.GetDomain(),
+		useHttps:          cfg.IsHttpsEnabled(),
+		skipHttpsRedirect: cfg.IsHttpsRedirectDisabled(),
+		httpsPort:         cfg.GetBindHttpsPort(),
+		apiAddress:        pbConf.HttpAddr,
+		timeout:           15 * time.Second,
 	}
 }
 
@@ -123,25 +125,11 @@ func (rp *DynamicReverseProxy) ServeHTTP(w http.ResponseWriter, r *http.Request)
 	proxy := rp.buildReverseProxy(target)
 	handler := http.TimeoutHandler(proxy, rp.timeout, "proxy timeout")
 
-	protoHeader := r.Header.Get("X-Forwarded-Proto")
-	protoParts := strings.Split(protoHeader, ",")
-	proto := ""
-	if len(protoParts) > 0 {
-		proto = strings.ToLower(strings.TrimSpace(protoParts[0]))
-	}
-	isRequestSecure := r.TLS != nil || proto == "https"
-
-	if isRequestSecure || !rp.useHttps {
+	if networktools.IsRequestSecure(r) || !rp.useHttps || rp.skipHttpsRedirect {
 		handler.ServeHTTP(w, r.WithContext(ctx))
 		return
 	}
 
-	// TODO: check if the host has HTTPS certificates
-
-	redirectHost := cleanHost
-	if rp.httpsPort != "" && rp.httpsPort != "443" {
-		redirectHost = fmt.Sprintf("%s:%s", cleanHost, rp.httpsPort)
-	}
-	redirectUrl := fmt.Sprintf("https://%s%s", redirectHost, r.URL.RequestURI())
+	redirectUrl := networktools.BuildHostURL("https", cleanHost, rp.httpsPort, r.URL.RequestURI())
 	http.Redirect(w, r, redirectUrl, http.StatusPermanentRedirect)
 }
