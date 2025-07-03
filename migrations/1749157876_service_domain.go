@@ -8,6 +8,8 @@ import (
 	m "github.com/pocketbase/pocketbase/migrations"
 )
 
+const DomainPattern = `^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9][a-z0-9-]{0,61}[a-z0-9]`
+
 func init() {
 	m.Register(func(app core.App) error {
 		services, err := app.FindCollectionByNameOrId(collections.Services)
@@ -20,7 +22,7 @@ func init() {
 				Name:     "domain",
 				System:   true,
 				Required: true,
-				Pattern:  `^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9][a-z0-9-]{0,61}[a-z0-9]`,
+				Pattern:  DomainPattern,
 			},
 			&core.RelationField{
 				Name:         "service",
