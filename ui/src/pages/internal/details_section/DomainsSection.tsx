@@ -33,7 +33,6 @@ export const DomainsSection: FC<Props> = ({ service_id }) => {
     return {
       id: "__",
       domain: proxy.base_domain ? `${service_id}.${proxy.base_domain}` : "--",
-      status: "active",
       use_https: proxy.use_https ? "yes" : "no",
     };
   }, [proxy.base_domain, proxy.use_https, service_id]);

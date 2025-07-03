@@ -3,14 +3,6 @@ import { ExternalLink, Pencil, ShieldCheck, Trash2 } from "lucide-react";
 import { useMemo, type FC } from "react";
 import type { DomainDto } from "../../../services/services_domain";
 
-const statusStyles: Record<string, string> = {
-  active: "text-success",
-  pending: "text-info",
-  failure: "text-error",
-  expired: "text-warning",
-  renewal: "text-accent",
-};
-
 type Props = {
   domain: DomainDto;
   url?: string;
@@ -58,14 +50,6 @@ export const DomainCard: FC<Props> = ({
             <ExternalLink className="w-4 h-4" />
           </a>
         </div>
-        <span
-          className={classNames(
-            "text-xs font-medium",
-            statusStyles[domain.status],
-          )}
-        >
-          {domain.status}
-        </span>
       </div>
 
       <div className="flex justify-between items-center text-xs text-zinc-500 dark:text-zinc-400 mt-2">

@@ -35,10 +35,6 @@ func init() {
 				System:    true,
 				Required:  true,
 			},
-			&core.TextField{
-				Name:   "status",
-				System: true,
-			},
 		)
 		servicesDomain.Indexes = append(
 			servicesDomain.Indexes,

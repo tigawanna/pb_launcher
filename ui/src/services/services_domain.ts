@@ -5,7 +5,6 @@ export interface DomainDto {
   id: string;
   use_https: "yes" | "no";
   domain: string;
-  status: string;
 }
 
 export const domainsService = {

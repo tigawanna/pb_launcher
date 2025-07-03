@@ -90,58 +90,6 @@ func TestPrepareProxyHeaders(t *testing.T) {
 	}
 }
 
-func TestGetRealIP(t *testing.T) {
-	tests := []struct {
-		name           string
-		realIP         string
-		forwardedFor   string
-		remoteAddr     string
-		expectedResult string
-	}{
-		{
-			name:           "With X-Real-IP header",
-			realIP:         "203.0.113.1",
-			remoteAddr:     "192.0.2.1:1234",
-			expectedResult: "203.0.113.1",
-		},
-		{
-			name:           "With X-Forwarded-For header",
-			forwardedFor:   "198.51.100.2",
-			remoteAddr:     "192.0.2.1:1234",
-			expectedResult: "198.51.100.2",
-		},
-		{
-			name:           "Without headers, use RemoteAddr",
-			remoteAddr:     "192.0.2.1:5678",
-			expectedResult: "192.0.2.1",
-		},
-		{
-			name:           "With invalid RemoteAddr fallback",
-			remoteAddr:     "invalid-addr",
-			expectedResult: "",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			req := httptest.NewRequest(http.MethodGet, "http://example.com", nil)
-
-			if tt.realIP != "" {
-				req.Header.Set("X-Real-IP", tt.realIP)
-			}
-			if tt.forwardedFor != "" {
-				req.Header.Set("X-Forwarded-For", tt.forwardedFor)
-			}
-			req.RemoteAddr = tt.remoteAddr
-
-			result := networktools.GetRealIP(req)
-			if result != tt.expectedResult {
-				t.Errorf("Expected %s, got %s", tt.expectedResult, result)
-			}
-		})
-	}
-}
-
 func TestIsRequestSecure(t *testing.T) {
 	tests := []struct {
 		name           string

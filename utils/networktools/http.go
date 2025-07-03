@@ -28,17 +28,6 @@ func PrepareProxyHeaders(req *http.Request, target *url.URL) {
 	req.Header.Set("X-Forwarded-Proto", scheme)
 }
 
-func GetRealIP(r *http.Request) string {
-	if ip := r.Header.Get("X-Real-IP"); ip != "" {
-		return ip
-	}
-	if ip := r.Header.Get("X-Forwarded-For"); ip != "" {
-		return ip
-	}
-	ip, _, _ := net.SplitHostPort(r.RemoteAddr)
-	return ip
-}
-
 func IsRequestSecure(r *http.Request) bool {
 	protoHeader := r.Header.Get("X-Forwarded-Proto")
 	protoParts := strings.Split(protoHeader, ",")
