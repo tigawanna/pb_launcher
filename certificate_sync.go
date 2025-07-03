@@ -9,6 +9,7 @@ import (
 	"pb_launcher/configs"
 	"pb_launcher/helpers/serialexecutor"
 	"pb_launcher/internal/certificates/tlscommon"
+	certmanager "pb_launcher/internal/certmanager/domain"
 	"pb_launcher/utils/domainutil"
 	"sync/atomic"
 )
@@ -70,4 +71,31 @@ func RegisterCertificateAutoRenewal(
 	)
 
 	return executor.Add(certificateTask)
+}
+
+func RegisterCertRequestPlanner(
+	executor *serialexecutor.SequentialExecutor,
+	planner *certmanager.CertRequestPlannerUsecase,
+	cfg configs.Config) error {
+
+	plannerTask := serialexecutor.NewTask(
+		func(ctx context.Context) {
+			domains, err := planner.Domains(ctx)
+			if err != nil {
+				slog.Error("failed to fetch domains", "err", err)
+				return
+			}
+			for _, domain := range domains {
+				if err := planner.PostSSLDomainRequest(ctx, domain); err != nil {
+					slog.Error("failed to schedule cert request",
+						"domain", domain,
+						"err", err,
+					)
+				}
+			}
+		},
+		cfg.GetCertRequestPlannerInterval(),
+		0,
+	)
+	return executor.Add(plannerTask)
 }

@@ -11,6 +11,7 @@ import (
 	"pb_launcher/internal"
 
 	"pb_launcher/internal/certificates"
+	"pb_launcher/internal/certmanager"
 	"pb_launcher/internal/download"
 	"pb_launcher/internal/launcher"
 	"pb_launcher/internal/proxy"
@@ -56,12 +57,15 @@ func createRootCommand(app core.App) *cobra.Command {
 				download.Module,
 				launcher.Module,
 				proxy.Module,
+				certmanager.Module,
 				internal.Module, // hooks
 				fx.Invoke(
 					StartApiServer,
 					ServeEmbeddedUI,
 					// Tasks
 					RegisterCertificateAutoRenewal,
+					RegisterCertRequestPlanner,
+
 					RegisterBinaryReleaseSync,
 					RegisterLauncherRunner,
 					RunSequentialExecutor, // Start Stask Runner

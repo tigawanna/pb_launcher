@@ -27,6 +27,8 @@ type Config interface {
 	GetDataDir() string
 	GetCertificatesDir() string
 	GetMinCertificateTtl() time.Duration
+	GetMaxDomainCertAttempts() int
+	GetCertRequestPlannerInterval() time.Duration
 
 	GetDomain() string
 	GetBindAddress() string
@@ -68,16 +70,18 @@ type configs struct {
 	CommandCheckInterval     string `mapstructure:"command_check_interval"`     // default: 10ms
 	CertificateCheckInterval string `mapstructure:"certificate_check_interval"` // default: 1h
 
-	DownloadDir          string `mapstructure:"download_dir"`     // default: ./downloads
-	CertificatesDir      string `mapstructure:"certificates_dir"` // default: ./.certificates
-	DataDir              string `mapstructure:"data_dir"`         // default: ./data
-	Domain               string `mapstructure:"domain"`
-	BindAddress          string `mapstructure:"bind_address"` // default: 127.0.0.1
-	BindPort             string `mapstructure:"bind_port"`    // default: 8072
-	Https                bool   `mapstructure:"https"`
-	DisableHttpsRedirect bool   `mapstructure:"disable_https_redirect"`
-	HttpsPort            string `mapstructure:"https_port"`          // default: 8443
-	MinCertificateTtl    string `mapstructure:"min_certificate_ttl"` // default: 720h
+	DownloadDir                string `mapstructure:"download_dir"`     // default: ./downloads
+	CertificatesDir            string `mapstructure:"certificates_dir"` // default: ./.certificates
+	DataDir                    string `mapstructure:"data_dir"`         // default: ./data
+	Domain                     string `mapstructure:"domain"`
+	BindAddress                string `mapstructure:"bind_address"` // default: 127.0.0.1
+	BindPort                   string `mapstructure:"bind_port"`    // default: 8072
+	Https                      bool   `mapstructure:"https"`
+	DisableHttpsRedirect       bool   `mapstructure:"disable_https_redirect"`
+	HttpsPort                  string `mapstructure:"https_port"`                    // default: 8443
+	MinCertificateTtl          string `mapstructure:"min_certificate_ttl"`           // default: 720h
+	MaxDomainCertAttempts      int    `mapstructure:"max_domain_cert_attempts"`      // default: 3
+	CertRequestPlannerInterval string `mapstructure:"cert_request_planner_interval"` // default: 5m
 
 	Tls tls_configs `mapstructure:"cert"`
 }
@@ -88,6 +92,7 @@ const min_sync_interval = 5 * time.Minute
 const min_command_check_interval = 10 * time.Second
 const min_certificate_check_interval = time.Minute
 const min_certificate_ttl = 30 * 24 * time.Hour
+const min_cert_request_planner_interval = 5 * time.Minute
 
 func (c *configs) GetReleaseSyncInterval() time.Duration {
 	duration, err := time.ParseDuration(c.ReleaseSyncInterval)
@@ -186,6 +191,30 @@ func (c *configs) GetMinCertificateTtl() time.Duration {
 		return min_certificate_ttl
 	}
 	return max(duration, min_certificate_ttl)
+}
+
+func (c *configs) GetMaxDomainCertAttempts() int {
+	if c.MaxDomainCertAttempts < 1 {
+		slog.Warn("MaxDomainCertAttempts below minimum, forcing to 1")
+		return 1
+	}
+	if c.MaxDomainCertAttempts > 5 {
+		slog.Warn("MaxDomainCertAttempts above maximum, forcing to 5")
+		return 5
+	}
+	return c.MaxDomainCertAttempts
+}
+
+func (c *configs) GetCertRequestPlannerInterval() time.Duration {
+	duration, err := time.ParseDuration(c.CertRequestPlannerInterval)
+	if err != nil {
+		slog.Warn("Failed to parse cert_request_planner_interval",
+			slog.String("raw_value", c.CertRequestPlannerInterval),
+			slog.String("error", err.Error()),
+		)
+		return min_cert_request_planner_interval
+	}
+	return max(duration, min_cert_request_planner_interval)
 }
 
 func (c *configs) GetTlsConfig() TlsConfig { return &c.Tls }
