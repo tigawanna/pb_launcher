@@ -25,3 +25,12 @@ export const formatUrl = (
 
   return `${normalizedProtocol}//${hostname}${portSegment}`;
 };
+
+export const extractParts = (url: URL) => {
+  const { protocol, hostname, port } = url;
+  const isDefaultPort =
+    (protocol === "http:" && port === "80") ||
+    (protocol === "https:" && port === "443");
+  const portPart = port && !isDefaultPort ? `:${port}` : "";
+  return { protocol, hostname, portPart };
+};

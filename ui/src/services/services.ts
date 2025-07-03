@@ -1,4 +1,4 @@
-import { joinUrls } from "../utils/url";
+import { extractParts, joinUrls } from "../utils/url";
 import { HttpError } from "./client/errors";
 import { pb } from "./client/pb";
 import { COMANDS_COLLECTION } from "./release";
@@ -76,19 +76,28 @@ export const serviceService = {
       restart_policy: data.restart_policy,
     });
   },
+
   getBaseParts() {
-    const url = base_url ? new URL(base_url) : new URL(window.location.href);
-    const { protocol, hostname, port } = url;
-    const isDefaultPort =
-      (protocol === "http:" && port === "80") ||
-      (protocol === "https:" && port === "443");
-    const portPart = port && !isDefaultPort ? `:${port}` : "";
-    return { protocol, hostname, portPart };
+    try {
+      const url =
+        base_url && base_url !== "/"
+          ? new URL(base_url)
+          : new URL(window.location.href);
+      return extractParts(url);
+    } catch (err) {
+      console.error("Invalid base URL", err);
+      return extractParts(new URL(window.location.href));
+    }
   },
 
-  buildServiceUrl(id: string): URL {
-    const { protocol, hostname, portPart } = serviceService.getBaseParts();
-    return new URL(`${protocol}//${id}.${hostname}${portPart}`);
+  buildServiceUrl(id: string): URL | undefined {
+    try {
+      const { protocol, hostname, portPart } = serviceService.getBaseParts();
+      return new URL(`${protocol}//${id}.${hostname}${portPart}`);
+    } catch (err) {
+      console.error("Invalid service URL", err);
+      return undefined;
+    }
   },
 
   buildServiceStringUrl(id: string): string {
