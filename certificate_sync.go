@@ -86,7 +86,7 @@ func RegisterCertRequestPlanner(
 				return
 			}
 			for _, domain := range domains {
-				if err := planner.PostSSLDomainRequest(ctx, domain); err != nil {
+				if err := planner.PostSSLDomainRequest(ctx, domain, true); err != nil {
 					slog.Error("failed to schedule cert request",
 						"domain", domain,
 						"err", err,

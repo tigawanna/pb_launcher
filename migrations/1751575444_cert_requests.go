@@ -46,6 +46,7 @@ func init() {
 				OnCreate: true,
 			},
 		)
+		certRequests.CreateRule = utils.StrPointer(`@request.auth.id != ""`)
 
 		return app.Save(certRequests)
 	}, func(app core.App) error {

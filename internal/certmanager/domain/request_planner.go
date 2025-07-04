@@ -34,7 +34,9 @@ func (uc *CertRequestPlannerUsecase) Domains(ctx context.Context) ([]string, err
 	return uc.repository.DomainsWithHttpsEnabled(ctx)
 }
 
-func (uc *CertRequestPlannerUsecase) PostSSLDomainRequest(ctx context.Context, domain string) error {
+// PostSSLDomainRequest schedules a task to request an SSL certificate for the given domain.
+// If checkMaxAttempts is true, the function validates whether the maximum number of attempts has been exceeded before scheduling
+func (uc *CertRequestPlannerUsecase) PostSSLDomainRequest(ctx context.Context, domain string, checkMaxAttempts bool) error {
 	pending, err := uc.repository.PendingByDomain(ctx, domain)
 	if err != nil {
 		return err
@@ -43,14 +45,18 @@ func (uc *CertRequestPlannerUsecase) PostSSLDomainRequest(ctx context.Context, d
 		return nil // already has pending request
 	}
 
-	last, err := uc.repository.LastByDomain(ctx, domain)
-	if err != nil && !errors.Is(err, repositories.ErrCertRequestNotFound) {
-		return err
-	}
-
-	if last != nil &&
-		last.Status == models.CertStateFailed && last.Attempt > uc.maxAttempts {
-		return nil // exceeded max attempts
+	attempt := 1
+	if checkMaxAttempts {
+		last, err := uc.repository.LastByDomain(ctx, domain)
+		if err != nil && !errors.Is(err, repositories.ErrCertRequestNotFound) {
+			return err
+		}
+		if last != nil && last.Status == models.CertStateFailed {
+			if last.Attempt >= uc.maxAttempts {
+				return nil // exceeded max attempts
+			}
+			attempt = last.Attempt + 1
+		}
 	}
 
 	currentCert, err := uc.store.Resolve(domain)
@@ -63,11 +69,6 @@ func (uc *CertRequestPlannerUsecase) PostSSLDomainRequest(ctx context.Context, d
 
 	if err == nil && currentCert.Ttl > uc.minTTL {
 		return nil // valid cert, no need to renew
-	}
-
-	attempt := 1
-	if last != nil {
-		attempt = last.Attempt + 1
 	}
 
 	return uc.repository.CreatePending(ctx, domain, attempt)

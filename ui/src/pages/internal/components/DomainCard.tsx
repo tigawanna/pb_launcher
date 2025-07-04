@@ -10,6 +10,7 @@ type Props = {
   readonly?: boolean;
   onEdit?: () => void;
   onDelete?: () => void;
+  onValidate?: () => void;
 };
 
 export const DomainCard: FC<Props> = ({
@@ -19,12 +20,20 @@ export const DomainCard: FC<Props> = ({
   url,
   onEdit,
   onDelete,
+  onValidate,
 }) => {
   const fmtdomain = useMemo(() => {
+    let status = domain.x_cert_request_state;
+    if (status == "failed" && !domain.x_reached_max_attempt) {
+      status = "pending";
+    }
     return {
       name: domain.domain,
       protocol: domain.use_https === "yes" ? "https" : "http",
-      status: "active" as "active" | "pending", // TODO
+      status: status,
+      has_valid_ssl_cert: !!domain.x_has_valid_ssl_cert,
+      reached_max_attempt: !!domain.x_reached_max_attempt,
+      failed_error_message: domain.x_failed_error_message,
     };
   }, [domain]);
 
@@ -50,8 +59,21 @@ export const DomainCard: FC<Props> = ({
             <ExternalLink className="w-4 h-4" />
           </a>
         </div>
+        {fmtdomain.status && fmtdomain.protocol === "https" && (
+          <span
+            className={classNames("text-xs font-medium", {
+              "text-warning":
+                fmtdomain.status === "pending" && !fmtdomain.has_valid_ssl_cert,
+              "text-success":
+                fmtdomain.status === "approved" || fmtdomain.has_valid_ssl_cert,
+              "text-error":
+                fmtdomain.status === "failed" && !fmtdomain.has_valid_ssl_cert,
+            })}
+          >
+            {fmtdomain.status}
+          </span>
+        )}
       </div>
-
       <div className="flex justify-between items-center text-xs text-zinc-500 dark:text-zinc-400 mt-2">
         <div className="flex items-center gap-6">
           <div className="flex">
@@ -60,20 +82,23 @@ export const DomainCard: FC<Props> = ({
             </span>
             <span className="badge badge-ghost badge-xs">Port: {port}</span>
           </div>
-          {!readonly && (
-            <button
-              className={classNames(
-                "btn btn-xs gap-1 border",
-                "text-zinc-700 dark:text-zinc-200",
-                "bg-white dark:bg-zinc-800",
-                "hover:bg-zinc-100 dark:hover:bg-zinc-700",
-                "border-zinc-300 dark:border-zinc-700",
-              )}
-            >
-              <ShieldCheck className="w-3 h-3 text-inherit" />
-              Validar DNS
-            </button>
-          )}
+          {!readonly &&
+            fmtdomain.reached_max_attempt &&
+            fmtdomain.protocol === "https" && (
+              <button
+                onClick={onValidate}
+                className={classNames(
+                  "btn btn-xs gap-1 border",
+                  "text-zinc-700 dark:text-zinc-200",
+                  "bg-white dark:bg-zinc-800",
+                  "hover:bg-zinc-100 dark:hover:bg-zinc-700",
+                  "border-zinc-300 dark:border-zinc-700",
+                )}
+              >
+                <ShieldCheck className="w-3 h-3 text-inherit" />
+                Validar DNS
+              </button>
+            )}
         </div>
         {!readonly && (
           <div className="flex gap-6">
@@ -98,6 +123,11 @@ export const DomainCard: FC<Props> = ({
           </div>
         )}
       </div>
+      {fmtdomain.protocol === "https" && fmtdomain.reached_max_attempt && (
+        <div className="pl-2 text-xs text-error mt-2">
+          <p>{fmtdomain.failed_error_message}</p>
+        </div>
+      )}
     </div>
   );
 };

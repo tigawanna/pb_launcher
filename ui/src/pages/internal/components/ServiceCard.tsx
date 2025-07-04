@@ -1,4 +1,4 @@
-import { useRef, useState, type FC } from "react";
+import { useMemo, useRef, useState, type FC } from "react";
 import type { ServiceDto } from "../../../services/services";
 import {
   Check,
@@ -13,8 +13,11 @@ import classNames from "classnames";
 import { useCopyToClipboard } from "@uidotdev/usehooks";
 import { useModal } from "../../../components/modal/hook";
 import { DefaultCredentialsCard } from "./DefaultCredentialsCard";
+import type { ProxyConfigsResponse } from "../../../services/config";
+import { formatUrl } from "../../../utils/url";
 
 type Props = {
+  proxyInfo: ProxyConfigsResponse;
   service: ServiceDto;
   onDetails: () => void;
   onDelete: () => void;
@@ -24,6 +27,7 @@ type Props = {
 };
 
 export const ServiceCard: FC<Props> = ({
+  proxyInfo,
   service,
   onDetails,
   onDelete,
@@ -36,6 +40,24 @@ export const ServiceCard: FC<Props> = ({
   const { openModal } = useModal();
   const [, copyToClipboard] = useCopyToClipboard();
   const [copiedField, setCopiedField] = useState<"url" | null>(null);
+
+  const serviceUrl = useMemo(() => {
+    const domain = proxyInfo.base_domain
+      ? `${service.id}.${proxyInfo.base_domain}`
+      : "--";
+    return formatUrl(
+      proxyInfo.use_https ? "https" : "http",
+      domain,
+      proxyInfo.use_https ? proxyInfo.https_port : proxyInfo.http_port,
+    );
+  }, [
+    proxyInfo.base_domain,
+    proxyInfo.http_port,
+    proxyInfo.https_port,
+    proxyInfo.use_https,
+    service.id,
+  ]);
+
   const handleCopy = (value: string, field: "url") => {
     copyToClipboard(value);
     setCopiedField(field);
@@ -189,12 +211,12 @@ export const ServiceCard: FC<Props> = ({
         </div>
         <div className="flex gap-8">
           <a
-            href={service.url}
+            href={serviceUrl}
             target="_blank"
             rel="noreferrer"
             className="link link-primary truncate text-xs flex-1"
           >
-            {service.url}
+            {serviceUrl}
           </a>
           <div className="flex gap-4">
             {copiedField === "url" ? (
@@ -202,7 +224,7 @@ export const ServiceCard: FC<Props> = ({
             ) : (
               <Copy
                 className="w-4 h-4 select-none active:translate-[0.5px] cursor-pointer"
-                onClick={() => handleCopy(service.url ?? "", "url")}
+                onClick={() => handleCopy(serviceUrl ?? "", "url")}
               />
             )}
             <ShieldAlert

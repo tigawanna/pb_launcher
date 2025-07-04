@@ -23,6 +23,7 @@ export const DomainsSection: FC<Props> = ({ service_id }) => {
   const confirm = useConfirmModal();
   const { openModal } = useModal();
   const proxy = useProxyConfigs();
+  
   const domainsQuery = useQuery({
     queryKey: ["services", service_id, "domains"],
     queryFn: () => domainsService.fetchAll(service_id),
@@ -80,6 +81,15 @@ export const DomainsSection: FC<Props> = ({ service_id }) => {
     }
   };
 
+  const requestSSLCertificate = useMutation({
+    mutationFn: domainsService.createSSLRequest,
+    onSuccess: () => setTimeout(() => domainsQuery.refetch()),
+    onError: error => toast.error(getErrorMessage(error)),
+  });
+
+  const handleCreateSSLRequest = async (domain: string) =>
+    requestSSLCertificate.mutate(domain);
+
   if (domainsQuery.isFetching) {
     return <div className="p-4">Loading...</div>;
   }
@@ -120,8 +130,10 @@ export const DomainsSection: FC<Props> = ({ service_id }) => {
           <DomainCard
             key={domain.id}
             domain={domain}
+            port={proxy.use_https ? proxy.https_port : proxy.http_port}
             onEdit={() => openEditModal(domain)}
             onDelete={() => handleDelete(domain.id)}
+            onValidate={() => handleCreateSSLRequest(domain.domain)}
           />
         ))}
       </div>

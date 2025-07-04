@@ -15,4 +15,5 @@ type CertRequestRepository interface {
 	MarkAsFailed(ctx context.Context, id, message string) error
 	PendingByDomain(ctx context.Context, domain string) ([]models.CertRequest, error)
 	LastByDomain(ctx context.Context, domain string) (*models.CertRequest, error)
+	DeletePendingByDomain(ctx context.Context, domain string) error
 }

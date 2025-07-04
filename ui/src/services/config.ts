@@ -1,7 +1,7 @@
 import { joinUrls } from "../utils/url";
 import { HttpError } from "./client/errors";
 import { pb } from "./client/pb";
-interface ProxyConfigsResponse {
+export interface ProxyConfigsResponse {
   use_https?: boolean;
   http_port?: string;
   https_port?: string;

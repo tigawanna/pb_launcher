@@ -1,15 +1,12 @@
-import { extractParts, joinUrls } from "../utils/url";
+import { joinUrls } from "../utils/url";
 import { HttpError } from "./client/errors";
 import { pb } from "./client/pb";
 import { COMANDS_COLLECTION } from "./release";
-const base_url = import.meta.env.VITE_BASE_URL ?? "/";
 
 interface _Service {
   id: string;
   name: string;
   status: "idle" | "pending" | "running" | "stopped" | "failure";
-
-  url?: string;
 
   boot_user_email: string;
   boot_user_password: string;
@@ -77,34 +74,6 @@ export const serviceService = {
     });
   },
 
-  getBaseParts() {
-    try {
-      const url =
-        base_url && base_url !== "/"
-          ? new URL(base_url)
-          : new URL(window.location.href);
-      return extractParts(url);
-    } catch (err) {
-      console.error("Invalid base URL", err);
-      return extractParts(new URL(window.location.href));
-    }
-  },
-
-  buildServiceUrl(id: string): URL | undefined {
-    try {
-      const { protocol, hostname, portPart } = serviceService.getBaseParts();
-      return new URL(`${protocol}//${id}.${hostname}${portPart}`);
-    } catch (err) {
-      console.error("Invalid service URL", err);
-      return undefined;
-    }
-  },
-
-  buildServiceStringUrl(id: string): string {
-    const { protocol, hostname, portPart } = serviceService.getBaseParts();
-    return `${protocol}//${id}.${hostname}${portPart}`;
-  },
-
   serviceFields: [
     "id",
     "name",
@@ -142,7 +111,6 @@ export const serviceService = {
       id: service.id,
       name: service.name,
       status: commands.length > 0 ? "pending" : service.status,
-      url: serviceService.buildServiceStringUrl(service.id),
       boot_user_email: service.boot_user_email,
       boot_user_password: service.boot_user_password,
       last_started: service.last_started,
@@ -177,7 +145,6 @@ export const serviceService = {
         id: s.id,
         name: s.name,
         status: pendingServices.has(s.id) ? "pending" : s.status,
-        url: serviceService.buildServiceStringUrl(s.id),
         boot_user_email: s.boot_user_email,
         boot_user_password: s.boot_user_password,
         last_started: s.last_started,

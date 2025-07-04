@@ -11,6 +11,7 @@ import { useConfirmModal } from "../../hooks/useConfirmModal";
 import { getErrorMessage } from "../../utils/errors";
 import classNames from "classnames";
 import { useNavigate } from "react-router-dom";
+import { useProxyConfigs } from "../../hooks/useProxyConfigs";
 
 const STATUS_FILTER_KEY = "pb-dashboard-status-filter";
 type TStatus = "all" | "running" | "stopped";
@@ -19,6 +20,7 @@ export const ServicesPage = () => {
   const { openModal } = useModal();
   const confirm = useConfirmModal();
 
+  const proxyInfo = useProxyConfigs();
   const servicesQuery = useQuery({
     queryKey: ["services"],
     queryFn: serviceService.fetchAllServices,
@@ -154,6 +156,7 @@ export const ServicesPage = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {filtered.map(service => (
           <ServiceCard
+            proxyInfo={proxyInfo}
             key={service.id}
             service={service}
             onDetails={() => openDetailsService(service)}

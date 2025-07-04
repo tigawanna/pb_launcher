@@ -3,6 +3,8 @@ package hooks
 import (
 	"errors"
 	"pb_launcher/collections"
+	certmanager "pb_launcher/internal/certmanager/domain"
+	"pb_launcher/internal/certmanager/domain/repositories"
 	"pb_launcher/internal/proxy/domain"
 	"slices"
 
@@ -13,6 +15,8 @@ import (
 func AddServiceHooks(app *pocketbase.PocketBase,
 	serviceDiscovery *domain.ServiceDiscovery,
 	domainDiscovery *domain.DomainServiceDiscovery,
+	planner *certmanager.CertRequestPlannerUsecase,
+	repository repositories.CertRequestRepository,
 ) {
 	app.OnRecordCreateRequest(collections.Services).
 		BindFunc(func(e *core.RecordRequestEvent) error {
@@ -105,6 +109,17 @@ func AddServiceHooks(app *pocketbase.PocketBase,
 			return nil
 		})
 
+	app.OnRecordAfterCreateSuccess(collections.ServicesDomains).BindFunc(func(e *core.RecordEvent) error {
+		if err := e.Next(); err != nil {
+			return err
+		}
+		domain := e.Record.GetString("domain")
+		if e.Record.GetString("use_https") == "yes" {
+			return planner.PostSSLDomainRequest(e.Context, domain, false)
+		}
+		return nil
+	})
+
 	app.OnRecordAfterUpdateSuccess(collections.ServicesDomains).
 		BindFunc(func(e *core.RecordEvent) error {
 			if err := e.Next(); err != nil {
@@ -112,6 +127,9 @@ func AddServiceHooks(app *pocketbase.PocketBase,
 			}
 			domain := e.Record.GetString("domain")
 			domainDiscovery.InvalidateDomain(domain)
+			if e.Record.GetString("use_https") == "yes" {
+				return planner.PostSSLDomainRequest(e.Context, domain, false)
+			}
 			return nil
 		})
 
@@ -122,7 +140,7 @@ func AddServiceHooks(app *pocketbase.PocketBase,
 			}
 			domain := e.Record.GetString("domain")
 			domainDiscovery.InvalidateDomain(domain)
-			return nil
+			return repository.DeletePendingByDomain(e.Context, domain)
 		})
 
 }

@@ -98,6 +98,15 @@ func (r *CertRequestRepository) PendingByDomain(ctx context.Context, domain stri
 	return requests, nil
 }
 
+func (r *CertRequestRepository) DeletePendingByDomain(ctx context.Context, domain string) error {
+	const qry = "DELETE FROM cert_requests WHERE domain = {:domain} AND status = 'pending'"
+	_, err := r.app.DB().NewQuery(qry).
+		Bind(dbx.Params{"domain": domain}).
+		WithContext(ctx).
+		Execute()
+	return err
+}
+
 func (r *CertRequestRepository) LastByDomain(ctx context.Context, domain string) (*models.CertRequest, error) {
 	query := r.app.RecordQuery(collections.CertRequests).
 		WithContext(ctx).
