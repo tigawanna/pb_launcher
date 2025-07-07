@@ -29,6 +29,7 @@ type Config interface {
 	GetMinCertificateTtl() time.Duration
 	GetMaxDomainCertAttempts() int
 	GetCertRequestPlannerInterval() time.Duration
+	GetCertRequestExecutorInterval() time.Duration
 
 	GetDomain() string
 	GetBindAddress() string
@@ -38,6 +39,8 @@ type Config interface {
 	IsHttpsRedirectDisabled() bool
 
 	GetBindHttpsPort() string
+	GetAcmeEmail() string
+
 	GetTlsConfig() TlsConfig
 }
 
@@ -70,18 +73,21 @@ type configs struct {
 	CommandCheckInterval     string `mapstructure:"command_check_interval"`     // default: 10ms
 	CertificateCheckInterval string `mapstructure:"certificate_check_interval"` // default: 1h
 
-	DownloadDir                string `mapstructure:"download_dir"`     // default: ./downloads
-	CertificatesDir            string `mapstructure:"certificates_dir"` // default: ./.certificates
-	DataDir                    string `mapstructure:"data_dir"`         // default: ./data
-	Domain                     string `mapstructure:"domain"`
-	BindAddress                string `mapstructure:"bind_address"` // default: 127.0.0.1
-	BindPort                   string `mapstructure:"bind_port"`    // default: 8072
-	Https                      bool   `mapstructure:"https"`
-	DisableHttpsRedirect       bool   `mapstructure:"disable_https_redirect"`
-	HttpsPort                  string `mapstructure:"https_port"`                    // default: 8443
-	MinCertificateTtl          string `mapstructure:"min_certificate_ttl"`           // default: 720h
-	MaxDomainCertAttempts      int    `mapstructure:"max_domain_cert_attempts"`      // default: 3
-	CertRequestPlannerInterval string `mapstructure:"cert_request_planner_interval"` // default: 5m
+	DownloadDir                 string `mapstructure:"download_dir"`     // default: ./downloads
+	CertificatesDir             string `mapstructure:"certificates_dir"` // default: ./.certificates
+	DataDir                     string `mapstructure:"data_dir"`         // default: ./data
+	Domain                      string `mapstructure:"domain"`
+	BindAddress                 string `mapstructure:"bind_address"` // default: 127.0.0.1
+	BindPort                    string `mapstructure:"bind_port"`    // default: 8072
+	Https                       bool   `mapstructure:"https"`
+	DisableHttpsRedirect        bool   `mapstructure:"disable_https_redirect"`
+	HttpsPort                   string `mapstructure:"https_port"`                     // default: 8443
+	MinCertificateTtl           string `mapstructure:"min_certificate_ttl"`            // default: 720h
+	MaxDomainCertAttempts       int    `mapstructure:"max_domain_cert_attempts"`       // default: 3
+	CertRequestPlannerInterval  string `mapstructure:"cert_request_planner_interval"`  // default: 5m
+	CertRequestExecutorInterval string `mapstructure:"cert_request_executor_interval"` // default: 1m
+
+	AcmeEmail string `mapstructure:"acme_email"`
 
 	Tls tls_configs `mapstructure:"cert"`
 }
@@ -93,40 +99,30 @@ const min_command_check_interval = 10 * time.Second
 const min_certificate_check_interval = time.Minute
 const min_certificate_ttl = 30 * 24 * time.Hour
 const min_cert_request_planner_interval = 5 * time.Minute
+const min_cert_request_executor_interval = time.Minute
 
 func (c *configs) GetReleaseSyncInterval() time.Duration {
-	duration, err := time.ParseDuration(c.ReleaseSyncInterval)
-	if err != nil {
-		slog.Warn("Failed to parse release_sync_interval",
-			slog.String("raw_value", c.ReleaseSyncInterval),
-			slog.String("error", err.Error()),
-		)
-		return min_sync_interval
-	}
-	return max(duration, min_sync_interval)
+	return parseDurationWithMin(
+		c.ReleaseSyncInterval,
+		min_sync_interval,
+		"release_sync_interval",
+	)
 }
 
 func (c *configs) GetCommandCheckInterval() time.Duration {
-	duration, err := time.ParseDuration(c.CommandCheckInterval)
-	if err != nil {
-		slog.Warn("Failed to parse command_check_interval",
-			slog.String("raw_value", c.CommandCheckInterval),
-			slog.String("error", err.Error()),
-		)
-		return min_command_check_interval
-	}
-	return max(duration, min_command_check_interval)
+	return parseDurationWithMin(
+		c.CommandCheckInterval,
+		min_command_check_interval,
+		"command_check_interval",
+	)
 }
+
 func (c *configs) GetCertificateCheckInterval() time.Duration {
-	duration, err := time.ParseDuration(c.CertificateCheckInterval)
-	if err != nil {
-		slog.Warn("Failed to parse certificate_check_interval",
-			slog.String("raw_value", c.CertificateCheckInterval),
-			slog.String("error", err.Error()),
-		)
-		return min_certificate_check_interval
-	}
-	return max(duration, min_certificate_check_interval)
+	return parseDurationWithMin(
+		c.CertificateCheckInterval,
+		min_certificate_check_interval,
+		"certificate_check_interval",
+	)
 }
 
 func (c *configs) GetDownloadDir() string {
@@ -181,16 +177,16 @@ func (c *configs) GetBindHttpsPort() string {
 	return c.HttpsPort
 }
 
+func (c *configs) GetAcmeEmail() string {
+	return strings.TrimSpace(c.AcmeEmail)
+}
+
 func (c *configs) GetMinCertificateTtl() time.Duration {
-	duration, err := time.ParseDuration(c.MinCertificateTtl)
-	if err != nil {
-		slog.Warn("Failed to parse min_certificate_ttl",
-			slog.String("raw_value", c.MinCertificateTtl),
-			slog.String("error", err.Error()),
-		)
-		return min_certificate_ttl
-	}
-	return max(duration, min_certificate_ttl)
+	return parseDurationWithMin(
+		c.MinCertificateTtl,
+		min_certificate_ttl,
+		"min_certificate_ttl",
+	)
 }
 
 func (c *configs) GetMaxDomainCertAttempts() int {
@@ -206,15 +202,19 @@ func (c *configs) GetMaxDomainCertAttempts() int {
 }
 
 func (c *configs) GetCertRequestPlannerInterval() time.Duration {
-	duration, err := time.ParseDuration(c.CertRequestPlannerInterval)
-	if err != nil {
-		slog.Warn("Failed to parse cert_request_planner_interval",
-			slog.String("raw_value", c.CertRequestPlannerInterval),
-			slog.String("error", err.Error()),
-		)
-		return min_cert_request_planner_interval
-	}
-	return max(duration, min_cert_request_planner_interval)
+	return parseDurationWithMin(
+		c.CertRequestPlannerInterval,
+		min_cert_request_planner_interval,
+		"cert_request_planner_interval",
+	)
+}
+
+func (c *configs) GetCertRequestExecutorInterval() time.Duration {
+	return parseDurationWithMin(
+		c.CertRequestExecutorInterval,
+		min_cert_request_executor_interval,
+		"cert_request_executor_interval",
+	)
 }
 
 func (c *configs) GetTlsConfig() TlsConfig { return &c.Tls }
@@ -258,46 +258,7 @@ func LoadConfigs(configPath string) (Config, error) {
 	c.BindAddress = strings.TrimSpace(c.BindAddress)
 	c.BindPort = strings.TrimSpace(c.BindPort)
 	c.HttpsPort = strings.TrimSpace(c.HttpsPort)
-
-	if c.ReleaseSyncInterval != "" {
-		duration, err := time.ParseDuration(c.ReleaseSyncInterval)
-		if err != nil {
-			slog.Warn("Invalid release_sync_interval format",
-				slog.String("value", c.ReleaseSyncInterval),
-				slog.String("error", err.Error()),
-				slog.String("using_default", min_sync_interval.String()))
-
-			c.ReleaseSyncInterval = min_sync_interval.String()
-		} else if duration < min_sync_interval {
-			slog.Warn("Configured release_sync_interval is too short",
-				slog.Duration("provided", duration),
-				slog.Duration("minimum_allowed", min_sync_interval))
-
-			c.ReleaseSyncInterval = min_sync_interval.String()
-		} else {
-			c.ReleaseSyncInterval = duration.String()
-		}
-	}
-
-	if c.CommandCheckInterval != "" {
-		duration, err := time.ParseDuration(c.CommandCheckInterval)
-		if err != nil {
-			slog.Warn("Invalid command_check_interval format",
-				slog.String("value", c.CommandCheckInterval),
-				slog.String("error", err.Error()),
-				slog.String("using_default", min_command_check_interval.String()))
-
-			c.CommandCheckInterval = min_command_check_interval.String()
-		} else if duration < min_command_check_interval {
-			slog.Warn("Configured command_check_interval is too short",
-				slog.Duration("provided", duration),
-				slog.Duration("minimum_allowed", min_command_check_interval))
-
-			c.CommandCheckInterval = min_command_check_interval.String()
-		} else {
-			c.CommandCheckInterval = duration.String()
-		}
-	}
+	c.AcmeEmail = strings.TrimSpace(c.AcmeEmail)
 
 	if net.ParseIP(c.GetBindAddress()) == nil {
 		slog.Error("Invalid bind_address: not a valid IP address",
@@ -311,4 +272,26 @@ func LoadConfigs(configPath string) (Config, error) {
 	}
 	slog.Info("Loaded config file", slog.String("file_path", configPath))
 	return c, nil
+}
+
+func parseDurationWithMin(raw string, min time.Duration, name string) time.Duration {
+	if raw == "" {
+		return min
+	}
+	duration, err := time.ParseDuration(raw)
+	if err != nil {
+		slog.Warn("Failed to parse "+name,
+			slog.String("raw_value", raw),
+			slog.String("error", err.Error()),
+		)
+		return min
+	}
+	if duration < min {
+		slog.Warn("Provided "+name+" is below minimum; using minimum instead",
+			slog.String("raw_value", raw),
+			slog.String("min_value", min.String()),
+		)
+		return min
+	}
+	return duration
 }

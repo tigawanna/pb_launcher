@@ -95,7 +95,25 @@ func RegisterCertRequestPlanner(
 			}
 		},
 		cfg.GetCertRequestPlannerInterval(),
-		0,
+		1,
 	)
 	return executor.Add(plannerTask)
+}
+
+func RegisterCertRequestExecutor(
+	executor *serialexecutor.SequentialExecutor,
+	requestExecutor *certmanager.CertRequestExecutorUsecase,
+	cfg configs.Config,
+) error {
+	certRequestTask := serialexecutor.NewTask(
+		func(ctx context.Context) {
+			if err := requestExecutor.ExecutePlan(ctx); err != nil {
+				slog.Error("failed to execute certificate request plan", "error", err)
+			}
+		},
+		cfg.GetCertRequestExecutorInterval(),
+		0,
+	)
+
+	return executor.Add(certRequestTask)
 }

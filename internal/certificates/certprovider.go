@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"pb_launcher/configs"
 	"pb_launcher/internal/certificates/certstore"
+	http01 "pb_launcher/internal/certificates/http_01"
 	"pb_launcher/internal/certificates/providers/cloudflare"
 	"pb_launcher/internal/certificates/providers/mkcert"
 	"pb_launcher/internal/certificates/providers/selfsigned"
@@ -30,6 +31,8 @@ var Module = fx.Module("tls_provider",
 		fx.Private,
 		certstore.NewTlsStorer,
 	),
+	fx.Provide(http01.NewHttp01ChallengeAddressPublisher),
+	fx.Provide(http01.NewHTTP01TLSCertificateRequestService),
 	fx.Provide(fx.Annotate(
 		certstore.NewTlsStorerCache,
 		fx.As(new(tlscommon.Store)),

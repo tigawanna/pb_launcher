@@ -1,4 +1,4 @@
-package cloudflare
+package tlscommon
 
 import (
 	"crypto"
@@ -10,7 +10,7 @@ import (
 type Account struct {
 	Email        string                 `json:"email"`
 	Registration *registration.Resource `json:"registration"`
-	key          crypto.PrivateKey
+	Key          crypto.PrivateKey
 }
 
 var _ registration.User = (*Account)(nil)
@@ -24,7 +24,7 @@ func (a *Account) GetEmail() string {
 
 // GetPrivateKey returns the private RSA account key.
 func (a *Account) GetPrivateKey() crypto.PrivateKey {
-	return a.key
+	return a.Key
 }
 
 // GetRegistration returns the server registration.

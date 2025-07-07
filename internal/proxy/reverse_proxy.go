@@ -10,6 +10,7 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"pb_launcher/configs"
+	http01 "pb_launcher/internal/certificates/http_01"
 	"pb_launcher/internal/proxy/domain"
 	"pb_launcher/utils/networktools"
 	"strconv"
@@ -28,6 +29,7 @@ type DynamicReverseProxy struct {
 	skipHttpsRedirect bool
 	httpsPort         string
 	timeout           time.Duration
+	http01Store       *http01.Http01ChallengeAddressPublisher
 }
 
 var _ http.Handler = (*DynamicReverseProxy)(nil)
@@ -35,12 +37,14 @@ var _ http.Handler = (*DynamicReverseProxy)(nil)
 func NewDynamicReverseProxy(
 	discovery *domain.ServiceDiscovery,
 	domainDiscovery *domain.DomainServiceDiscovery,
+	http01Store *http01.Http01ChallengeAddressPublisher,
 	cfg configs.Config,
 	pbConf *apis.ServeConfig,
 ) *DynamicReverseProxy {
 	return &DynamicReverseProxy{
 		discovery:         discovery,
 		domainDiscovery:   domainDiscovery,
+		http01Store:       http01Store,
 		apiDomain:         cfg.GetDomain(),
 		useHttps:          cfg.IsHttpsEnabled(),
 		skipHttpsRedirect: cfg.IsHttpsRedirectDisabled(),
@@ -111,21 +115,36 @@ func (rp *DynamicReverseProxy) buildReverseProxy(target *url.URL) *httputil.Reve
 	return proxy
 }
 
+const AcmeChallengePath = "/.well-known/acme-challenge/"
+
 func (rp *DynamicReverseProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), rp.timeout)
 	defer cancel()
 	cleanHost := strings.Split(r.Host, ":")[0]
-	target, err := rp.resolveServiceTarget(ctx, cleanHost)
-	if err != nil {
-		slog.Warn("target resolution failed", "host", r.Host, "error", err)
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+
+	var proxy *httputil.ReverseProxy
+
+	isAcmeChallenge := strings.HasPrefix(r.URL.Path, AcmeChallengePath)
+	if isAcmeChallenge {
+		targetURL, err := rp.http01Store.ResolveAddress()
+		if err != nil {
+			http.Error(w, "not found", http.StatusInternalServerError)
+			return
+		}
+		proxy = httputil.NewSingleHostReverseProxy(targetURL) // For some reason, Let's Encrypt doesn't seem to work well with my buildReverseProxy
+	} else {
+		targetURL, err := rp.resolveServiceTarget(ctx, cleanHost)
+		if err != nil || targetURL == nil {
+			slog.Warn("target resolution failed", "host", r.Host, "error", err)
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		proxy = rp.buildReverseProxy(targetURL)
 	}
 
-	proxy := rp.buildReverseProxy(target)
 	handler := http.TimeoutHandler(proxy, rp.timeout, "proxy timeout")
 
-	if networktools.IsRequestSecure(r) || !rp.useHttps || rp.skipHttpsRedirect {
+	if networktools.IsRequestSecure(r) || !rp.useHttps || rp.skipHttpsRedirect || isAcmeChallenge {
 		handler.ServeHTTP(w, r.WithContext(ctx))
 		return
 	}

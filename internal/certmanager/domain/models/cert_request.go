@@ -14,6 +14,7 @@ type CertRequest struct {
 	ID        string
 	Domain    string
 	Status    CertRequestState
+	NotBefore *time.Time
 	Attempt   int
 	Message   *string
 	Requested *time.Time

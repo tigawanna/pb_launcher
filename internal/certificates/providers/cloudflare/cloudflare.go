@@ -48,9 +48,9 @@ func (s *CloudflareProvider) RequestCertificate(domain string) (*tlscommon.Certi
 		return nil, err
 	}
 
-	user := &Account{
+	user := &tlscommon.Account{
 		Email: s.email,
-		key:   privateKey,
+		Key:   privateKey,
 	}
 
 	config := lego.NewConfig(user)

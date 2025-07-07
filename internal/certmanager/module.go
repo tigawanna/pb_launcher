@@ -17,4 +17,5 @@ var Module = fx.Module("certmanager",
 	),
 
 	fx.Provide(domain.NewCertRequestPlannerUsecase),
+	fx.Provide(domain.NewCertRequestExecutorUsecase),
 )

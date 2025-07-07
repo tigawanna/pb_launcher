@@ -25,6 +25,10 @@ func init() {
 				System:    true,
 				Required:  true,
 			},
+			&core.DateField{
+				Name:   "not_before",
+				System: true,
+			},
 			&core.NumberField{
 				Name:     "attempt",
 				Min:      utils.Ptr[float64](1),

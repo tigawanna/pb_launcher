@@ -46,9 +46,13 @@ func (r *CertRequestRepository) CreatePending(ctx context.Context, domain string
 	if err != nil {
 		return err
 	}
+	if attempt < 1 {
+		attempt = 1
+	}
 	record := core.NewRecord(collection)
 	record.Set("domain", domain)
 	record.Set("status", string(models.CertStatePending))
+	record.Set("not_before", time.Now().Add(time.Duration(attempt*attempt)*time.Minute))
 	record.Set("attempt", attempt)
 	return r.app.Save(record)
 }
@@ -73,6 +77,23 @@ func (r *CertRequestRepository) MarkAsFailed(ctx context.Context, id, message st
 	record.Set("message", message)
 	record.Set("requested", time.Now())
 	return r.app.Save(record)
+}
+
+func (r *CertRequestRepository) Pending(ctx context.Context) ([]models.CertRequest, error) {
+	query := r.app.RecordQuery(collections.CertRequests).
+		WithContext(ctx).
+		AndWhere(dbx.NewExp("status='pending'")).
+		OrderBy("created desc")
+	var records []*core.Record
+	if err := query.All(&records); err != nil {
+		return nil, err
+	}
+
+	requests := make([]models.CertRequest, 0, len(records))
+	for _, rec := range records {
+		requests = append(requests, mapCertRequest(rec))
+	}
+	return requests, nil
 }
 
 func (r *CertRequestRepository) PendingByDomain(ctx context.Context, domain string) ([]models.CertRequest, error) {
@@ -132,6 +153,7 @@ func mapCertRequest(rec *core.Record) models.CertRequest {
 		ID:        rec.Id,
 		Domain:    rec.GetString("domain"),
 		Status:    models.CertRequestState(rec.GetString("status")),
+		NotBefore: utils.Ptr(rec.GetDateTime("not_before").Time()),
 		Attempt:   rec.GetInt("attempt"),
 		Message:   utils.Ptr(rec.GetString("message")),
 		Created:   rec.GetDateTime("created").Time(),

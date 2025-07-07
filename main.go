@@ -65,6 +65,7 @@ func createRootCommand(app core.App) *cobra.Command {
 					// Tasks
 					RegisterCertificateAutoRenewal,
 					RegisterCertRequestPlanner,
+					RegisterCertRequestExecutor,
 
 					RegisterBinaryReleaseSync,
 					RegisterLauncherRunner,
