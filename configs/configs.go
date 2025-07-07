@@ -45,8 +45,8 @@ type Config interface {
 }
 
 type tls_configs struct {
-	Provider string            `mapstructure:"provider"`
-	Props    map[string]string `mapstructure:"props"`
+	Provider string            `mapstructure:"provider" yaml:"provider"`
+	Props    map[string]string `mapstructure:"props" yaml:"props"`
 }
 
 var _ TlsConfig = (*tls_configs)(nil)
@@ -69,27 +69,27 @@ func (c *tls_configs) GetProp(key string) (string, bool) {
 }
 
 type configs struct {
-	ReleaseSyncInterval      string `mapstructure:"release_sync_interval"`      // default: 10m
-	CommandCheckInterval     string `mapstructure:"command_check_interval"`     // default: 10ms
-	CertificateCheckInterval string `mapstructure:"certificate_check_interval"` // default: 1h
+	ReleaseSyncInterval      string `mapstructure:"release_sync_interval" yaml:"release_sync_interval"`           // default: 10m
+	CommandCheckInterval     string `mapstructure:"command_check_interval" yaml:"command_check_interval"`         // default: 10ms
+	CertificateCheckInterval string `mapstructure:"certificate_check_interval" yaml:"certificate_check_interval"` // default: 1h
 
-	DownloadDir                 string `mapstructure:"download_dir"`     // default: ./downloads
-	CertificatesDir             string `mapstructure:"certificates_dir"` // default: ./.certificates
-	DataDir                     string `mapstructure:"data_dir"`         // default: ./data
-	Domain                      string `mapstructure:"domain"`
-	BindAddress                 string `mapstructure:"bind_address"` // default: 127.0.0.1
-	BindPort                    string `mapstructure:"bind_port"`    // default: 8072
-	Https                       bool   `mapstructure:"https"`
-	DisableHttpsRedirect        bool   `mapstructure:"disable_https_redirect"`
-	HttpsPort                   string `mapstructure:"https_port"`                     // default: 8443
-	MinCertificateTtl           string `mapstructure:"min_certificate_ttl"`            // default: 720h
-	MaxDomainCertAttempts       int    `mapstructure:"max_domain_cert_attempts"`       // default: 3
-	CertRequestPlannerInterval  string `mapstructure:"cert_request_planner_interval"`  // default: 5m
-	CertRequestExecutorInterval string `mapstructure:"cert_request_executor_interval"` // default: 1m
+	DownloadDir                 string `mapstructure:"download_dir" yaml:"download_dir"`         // default: ./downloads
+	CertificatesDir             string `mapstructure:"certificates_dir" yaml:"certificates_dir"` // default: ./.certificates
+	DataDir                     string `mapstructure:"data_dir" yaml:"data_dir"`                 // default: ./data
+	Domain                      string `mapstructure:"domain" yaml:"domain"`
+	BindAddress                 string `mapstructure:"bind_address" yaml:"bind_address"` // default: 127.0.0.1
+	BindPort                    string `mapstructure:"bind_port" yaml:"bind_port"`       // default: 8072
+	Https                       bool   `mapstructure:"https" yaml:"https"`
+	DisableHttpsRedirect        bool   `mapstructure:"disable_https_redirect" yaml:"disable_https_redirect"`
+	HttpsPort                   string `mapstructure:"https_port" yaml:"https_port"`                                         // default: 8443
+	MinCertificateTtl           string `mapstructure:"min_certificate_ttl" yaml:"min_certificate_ttl"`                       // default: 720h
+	MaxDomainCertAttempts       int    `mapstructure:"max_domain_cert_attempts" yaml:"max_domain_cert_attempts"`             // default: 3
+	CertRequestPlannerInterval  string `mapstructure:"cert_request_planner_interval" yaml:"cert_request_planner_interval"`   // default: 5m
+	CertRequestExecutorInterval string `mapstructure:"cert_request_executor_interval" yaml:"cert_request_executor_interval"` // default: 1m
 
-	AcmeEmail string `mapstructure:"acme_email"`
+	AcmeEmail string `mapstructure:"acme_email" yaml:"acme_email"`
 
-	Tls tls_configs `mapstructure:"cert"`
+	Tls tls_configs `mapstructure:"cert" yaml:"cert"`
 }
 
 var _ Config = (*configs)(nil)
@@ -190,15 +190,15 @@ func (c *configs) GetMinCertificateTtl() time.Duration {
 }
 
 func (c *configs) GetMaxDomainCertAttempts() int {
-	if c.MaxDomainCertAttempts < 1 {
-		slog.Warn("MaxDomainCertAttempts below minimum, forcing to 1")
+	if c.MaxDomainCertAttempts < 0 {
+		slog.Warn("max_domain_cert_attempts below minimum, forcing to 1")
 		return 1
 	}
 	if c.MaxDomainCertAttempts > 5 {
-		slog.Warn("MaxDomainCertAttempts above maximum, forcing to 5")
+		slog.Warn("max_domain_cert_attempts above maximum, forcing to 5")
 		return 5
 	}
-	return c.MaxDomainCertAttempts
+	return max(c.MaxDomainCertAttempts, 1)
 }
 
 func (c *configs) GetCertRequestPlannerInterval() time.Duration {

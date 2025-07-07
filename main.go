@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log/slog"
 	"os"
 	"path"
@@ -9,6 +10,8 @@ import (
 	"pb_launcher/helpers/serialexecutor"
 	"pb_launcher/helpers/unzip"
 	"pb_launcher/internal"
+	"runtime"
+	"strings"
 
 	"pb_launcher/internal/certificates"
 	"pb_launcher/internal/certmanager"
@@ -17,11 +20,21 @@ import (
 	"pb_launcher/internal/proxy"
 	_ "pb_launcher/migrations"
 
+	_ "embed"
+
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/spf13/cobra"
 	"go.uber.org/fx"
 )
+
+//go:embed config.yaml.example
+var configExampleYml []byte
+
+//go:embed version
+var version string
+
+var commit = "none"
 
 func initializeServer() *pocketbase.PocketBase {
 	app := pocketbase.New()
@@ -32,8 +45,20 @@ func initializeServer() *pocketbase.PocketBase {
 	return app
 }
 
+var skipCommands = map[string]bool{
+	"gen-config": true,
+	"version":    true,
+}
+
 func main() {
-	app := initializeServer()
+
+	args := strings.Join(os.Args[1:], "")
+	skipInit := skipCommands[args]
+
+	var app core.App
+	if !skipInit {
+		app = initializeServer()
+	}
 	rootCmd := createRootCommand(app)
 	registerCommands(rootCmd, app)
 	executeRootCommand(rootCmd)
@@ -120,10 +145,36 @@ func buildDowngradeCommand(migrationsRunner *core.MigrationsRunner) *cobra.Comma
 	}
 }
 
+func buildGenConfigCommand() *cobra.Command {
+	return &cobra.Command{
+		Use:   "gen-config",
+		Short: "Generate the default configuration in YAML format",
+		Run: func(cmd *cobra.Command, args []string) {
+			fmt.Print(string(configExampleYml))
+		},
+	}
+}
+
+func buildVersionCommand() *cobra.Command {
+	return &cobra.Command{
+		Use:   "version",
+		Short: "Print application version and environment details",
+		Run: func(cmd *cobra.Command, args []string) {
+			fmt.Println("Version:", version)
+			fmt.Println("Commit:", commit)
+			fmt.Println("Go Version:", runtime.Version())
+			fmt.Println("Compiler:", runtime.Compiler)
+			fmt.Printf("Platform: %s/%s\n", runtime.GOOS, runtime.GOARCH)
+		},
+	}
+}
+
 func registerCommands(rootCmd *cobra.Command, app core.App) {
 	migrationsRunner := core.NewMigrationsRunner(app, core.AppMigrations)
 	rootCmd.AddCommand(buildUpgradeCommand(migrationsRunner))
 	rootCmd.AddCommand(buildDowngradeCommand(migrationsRunner))
+	rootCmd.AddCommand(buildGenConfigCommand())
+	rootCmd.AddCommand(buildVersionCommand())
 }
 
 func executeRootCommand(rootCmd *cobra.Command) {

@@ -1,0 +1,31 @@
+# Network settings
+domain: pb.labenv.test
+bind_address: 127.0.0.1
+bind_port: "7080"
+https: false
+https_port: "8443"
+disable_https_redirect: false
+
+# Paths
+download_dir: ./downloads
+certificates_dir: ./.certificates
+data_dir: ./data
+
+# Certificate management
+acme_email: ""
+min_certificate_ttl: 720h
+max_domain_cert_attempts: 1
+cert_request_planner_interval: 5m
+cert_request_executor_interval: 1m
+certificate_check_interval: 1m
+
+# cert:
+#   provider: "cloudflare"
+#   props:
+#     email: "admin@auth_token"
+#     auth_token: ""
+
+
+# Sync & command checks
+release_sync_interval: 5m
+command_check_interval: 10s

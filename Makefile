@@ -5,10 +5,18 @@ build-ui:
 	@cd ui && rm -rf dist && npm run build-embed
 
 build: build-ui
-	@go build -o build/pb_launcher *.go
+	@go build \
+	-ldflags "-X main.commit=$(shell git rev-parse --short HEAD)" \
+	-o build/pb_launcher *.go
 
 clean:
 	@rm -rf pb_data
+
+gen-config:
+	@go run *.go gen-config
+
+print-version:
+	@go run *.go version
 
 upgrade:
 	@go run *.go upgrade
