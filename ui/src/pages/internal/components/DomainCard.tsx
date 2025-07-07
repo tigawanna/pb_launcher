@@ -84,6 +84,7 @@ export const DomainCard: FC<Props> = ({
           </div>
           {!readonly &&
             fmtdomain.reached_max_attempt &&
+            fmtdomain.status !== "pending" &&
             fmtdomain.protocol === "https" && (
               <button
                 onClick={onValidate}
