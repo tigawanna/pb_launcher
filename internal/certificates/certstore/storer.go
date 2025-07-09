@@ -75,13 +75,6 @@ func (s *TlsStorer) IsCertificateValid(cert *tlscommon.Certificate) error {
 	if now.Before(parsedCert.NotBefore) || now.After(parsedCert.NotAfter) {
 		return tlscommon.ErrCertificateExpired
 	}
-
-	ttl := time.Until(parsedCert.NotAfter)
-	if ttl < 0 {
-		ttl = 0
-	}
-	cert.Ttl = ttl
-
 	return nil
 }
 
@@ -129,12 +122,12 @@ func (s *TlsStorer) Resolve(domain string) (*tlscommon.Certificate, error) {
 	if err != nil {
 		return nil, err
 	}
-	cert := tlscommon.Certificate{
+	cert := &tlscommon.Certificate{
 		CertPEM: certPEM,
 		KeyPEM:  keyPEM,
 	}
-	if err := s.IsCertificateValid(&cert); err != nil {
-		return nil, err
+	if err := s.IsCertificateValid(cert); err != nil {
+		return cert, err
 	}
-	return &cert, nil
+	return cert, nil
 }

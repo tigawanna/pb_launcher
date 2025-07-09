@@ -67,7 +67,7 @@ func (uc *CertRequestPlannerUsecase) PostSSLDomainRequest(ctx context.Context, d
 		return err
 	}
 
-	if err == nil && currentCert.Ttl > uc.minTTL {
+	if err == nil && currentCert.GetTTL() > uc.minTTL {
 		return nil // valid cert, no need to renew
 	}
 

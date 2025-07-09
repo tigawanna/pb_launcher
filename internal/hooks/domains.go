@@ -53,7 +53,7 @@ func AddServiceDomainsHooks(
 				if err != nil || cert == nil {
 					newRecord.Set("x_has_valid_ssl_cert", false)
 				} else {
-					newRecord.Set("x_has_valid_ssl_cert", cert.Ttl > 0)
+					newRecord.Set("x_has_valid_ssl_cert", cert.GetTTL() > 0)
 				}
 				e.Records[idx] = newRecord
 			}

@@ -43,7 +43,7 @@ func RegisterCertificateAutoRenewal(
 				return
 			}
 
-			if err == nil && currentCert.Ttl > cfg.GetMinCertificateTtl() {
+			if err == nil && currentCert.GetTTL() > cfg.GetMinCertificateTtl() {
 				return
 			}
 
