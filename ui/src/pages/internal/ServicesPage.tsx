@@ -35,7 +35,11 @@ export const ServicesPage = () => {
 
   const filtered = useMemo(() => {
     return (servicesQuery.data ?? [])
-      .filter(s => s.name.toLowerCase().includes(query.toLowerCase()))
+      .filter(
+        s =>
+          String(s.id).includes(query.toLowerCase()) ||
+          s.name.toLowerCase().includes(query.toLowerCase()),
+      )
       .filter(s => {
         switch (statusFilter.value) {
           case "all":
