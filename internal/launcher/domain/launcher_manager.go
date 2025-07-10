@@ -22,7 +22,7 @@ import (
 )
 
 type LauncherManager struct {
-	sync.RWMutex
+	rwMtx               sync.RWMutex
 	dataDir             string
 	ipAddress           string
 	installTokenUsecase *CleanServiceInstallTokenUsecase
@@ -108,7 +108,12 @@ func (lm *LauncherManager) buildArgs(serviceID string) ([]string, error) {
 }
 
 // initializeBootUser sets up the initial boot user for the service instance.
-func (lm *LauncherManager) UpsertInitialSuperuser(ctx context.Context, service models.Service) error {
+func (lm *LauncherManager) UpsertSuperuser(ctx context.Context, serviceID, email, password string) error {
+	service, err := lm.repository.FindService(ctx, serviceID)
+	if err != nil {
+		return fmt.Errorf("failed to find service %s: %w", serviceID, err)
+	}
+
 	binaryPath, err := lm.finder.FindBinary(ctx, service.RepositoryID, service.Version, service.ExecFilePattern)
 	if err != nil {
 		slog.Error("failed to find binary", "serviceID", service.ID, "error", err)
@@ -119,8 +124,7 @@ func (lm *LauncherManager) UpsertInitialSuperuser(ctx context.Context, service m
 		slog.Error("failed to build args", "serviceID", service.ID, "error", err)
 		return err
 	}
-
-	args := append(baseArgs, "superuser", "upsert", service.BootUserEmail, service.BootUserPassword)
+	args := append(baseArgs, "superuser", "upsert", email, password)
 	cmd := exec.CommandContext(ctx, binaryPath, args...)
 
 	output, err := cmd.CombinedOutput()
@@ -133,7 +137,7 @@ func (lm *LauncherManager) UpsertInitialSuperuser(ctx context.Context, service m
 		)
 		return err
 	}
-	return nil
+	return lm.repository.UpdateSuperuser(ctx, serviceID, email, password)
 }
 
 var pbInstallURLRegex = regexp.MustCompile(`https?://[^/]+/_/#/pbinstal/([a-zA-Z0-9._\-]+)`)
@@ -264,8 +268,8 @@ func (lm *LauncherManager) restartService(ctx context.Context, service models.Se
 // RecoveryLastState restores and starts all services that were active
 // before pb_launcher was shut down.
 func (lm *LauncherManager) RecoveryLastState(ctx context.Context) error {
-	lm.Lock()
-	defer lm.Unlock()
+	lm.rwMtx.Lock()
+	defer lm.rwMtx.Unlock()
 	services, err := lm.repository.RunningServices(ctx)
 	if err != nil {
 		slog.Error("Failed to retrieve running services", "error", err)
@@ -328,8 +332,8 @@ func (lm *LauncherManager) Run(ctx context.Context) error {
 }
 
 func (lm *LauncherManager) Dispose() error {
-	lm.Lock()
-	defer lm.Unlock()
+	lm.rwMtx.Lock()
+	defer lm.rwMtx.Unlock()
 
 	var wg sync.WaitGroup
 	var mu sync.Mutex

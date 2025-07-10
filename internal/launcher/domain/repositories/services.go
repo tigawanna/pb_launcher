@@ -15,4 +15,5 @@ type ServiceRepository interface {
 	MarkServiceRunning(ctx context.Context, id string, listenIplistenIp, port string) error
 	SetServiceInstallToken(ctx context.Context, serviceID string, _pb_install string) error
 	CleanServiceInstallToken(ctx context.Context, _pb_install string) error
+	UpdateSuperuser(ctx context.Context, serviceID, email, password string) error
 }

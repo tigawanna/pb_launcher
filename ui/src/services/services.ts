@@ -174,7 +174,21 @@ export const serviceService = {
     const comands = pb.collection(COMANDS_COLLECTION);
     await comands.create({ service: data.service_id, action: data.action });
   },
-
+  upsertSuperuser: async (service_id: string) => {
+    const url = joinUrls(pb.baseURL, `/x-api/upsert_superuser/${service_id}`);
+    const response = await fetch(url, {
+      headers: { Authorization: pb.authStore.token },
+    });
+    const json = await response.json();
+    if (!response.ok) {
+      throw new HttpError(
+        response.status,
+        json?.message || "Unexpected error",
+        json,
+      );
+    }
+    return json as { email: string; password: string };
+  },
   fetchServiceLogs: async (
     signal: AbortSignal,
     service_id: string,

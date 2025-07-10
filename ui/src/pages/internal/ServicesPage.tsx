@@ -163,6 +163,7 @@ export const ServicesPage = () => {
             proxyInfo={proxyInfo}
             key={service.id}
             service={service}
+            refreshData={() => setTimeout(() => servicesQuery.refetch())}
             onDetails={() => openDetailsService(service)}
             onDelete={() => handleDeleteService(service.id)}
             onStart={() => handleStartService(service.id)}

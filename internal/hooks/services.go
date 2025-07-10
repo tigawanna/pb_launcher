@@ -24,11 +24,6 @@ func AddServiceHooks(app *pocketbase.PocketBase,
 				return errors.New("unauthorized: no auth record found")
 			}
 
-			email := e.Auth.GetString("email")
-			if email == "" {
-				return errors.New("unauthorized: email missing in auth record")
-			}
-
 			restart_policy := e.Record.GetString("restart_policy")
 			if !slices.Contains([]string{"no", "on-failure"}, restart_policy) {
 				restart_policy = "no"
@@ -36,8 +31,7 @@ func AddServiceHooks(app *pocketbase.PocketBase,
 
 			e.Record.Set("boot_completed", "no")
 			e.Record.Set("restart_policy", restart_policy)
-			e.Record.Set("boot_user_email", email)
-			e.Record.Set("boot_user_password", core.GenerateDefaultRandomId())
+
 			e.Record.Set("status", "idle")
 
 			return e.Next()

@@ -24,6 +24,7 @@ type Props = {
   onStart: () => void;
   onStop: () => void;
   onRestart: () => void;
+  refreshData: () => void;
 };
 
 export const ServiceCard: FC<Props> = ({
@@ -34,6 +35,7 @@ export const ServiceCard: FC<Props> = ({
   onRestart,
   onStart,
   onStop,
+  refreshData,
 }) => {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -76,8 +78,10 @@ export const ServiceCard: FC<Props> = ({
   const showDefaultCredentials = () => {
     openModal(
       <DefaultCredentialsCard
+        service_id={service.id}
         username={service.boot_user_email}
         password={service.boot_user_password}
+        onResetCredentials={refreshData}
       />,
     );
   };

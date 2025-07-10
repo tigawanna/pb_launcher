@@ -17,12 +17,12 @@ createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <Toaster reverseOrder={false} position="top-right" />
     <QueryClientProvider client={queryClient}>
-      <ModalProvider>
-        <ConfirmModalProvider>
+      <ConfirmModalProvider>
+        <ModalProvider>
           <AppRoutes />
-        </ConfirmModalProvider>
-        <ReactQueryDevtools initialIsOpen={false} />
-      </ModalProvider>
+          <ReactQueryDevtools initialIsOpen={false} />
+        </ModalProvider>
+      </ConfirmModalProvider>
     </QueryClientProvider>
   </StrictMode>,
 );

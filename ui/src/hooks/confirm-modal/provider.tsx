@@ -34,7 +34,7 @@ export const ConfirmModalProvider = ({ children }: { children: ReactNode }) => {
     if (!isOpen) return null;
 
     return (
-      <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
+      <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-[9999]">
         <div className="bg-base-100 p-6 rounded-lg shadow-lg w-full max-w-sm">
           <h3 className="text-lg font-bold mb-2">{title}</h3>
           <p className="text-base-content/80 mb-6">{message}</p>

@@ -1,15 +1,35 @@
+import { useMutation } from "@tanstack/react-query";
 import { useCopyToClipboard } from "@uidotdev/usehooks";
+import classNames from "classnames";
 import { Check, Copy } from "lucide-react";
 import type { FC } from "react";
 import { useState } from "react";
+import { serviceService } from "../../../services/services";
+import toast from "react-hot-toast";
+import { getErrorMessage } from "../../../utils/errors";
+import { useConfirmModal } from "../../../hooks/useConfirmModal";
 
 type Props = {
+  service_id: string;
   username: string;
   password: string;
   onResetCredentials?: () => void;
 };
 
-export const DefaultCredentialsCard: FC<Props> = ({ username, password }) => {
+export const DefaultCredentialsCard: FC<Props> = ({
+  service_id,
+  username: username_init,
+  password: password_init,
+  onResetCredentials,
+}) => {
+  const [{ password, username }, setCredentials] = useState<{
+    username: string;
+    password: string;
+  }>({
+    username: username_init,
+    password: password_init,
+  });
+  const confirm = useConfirmModal();
   const [, copyToClipboard] = useCopyToClipboard();
   const [copiedField, setCopiedField] = useState<
     "username" | "password" | null
@@ -19,6 +39,24 @@ export const DefaultCredentialsCard: FC<Props> = ({ username, password }) => {
     copyToClipboard(value);
     setCopiedField(field);
     setTimeout(() => setCopiedField(null), 1200);
+  };
+  const upsertSuperuserMutation = useMutation({
+    mutationFn: serviceService.upsertSuperuser,
+    onSuccess: ({ email, password }) => {
+      setCredentials({ password, username: email });
+      onResetCredentials?.();
+    },
+    onError: error => toast.error(getErrorMessage(error)),
+  });
+
+  const onUpsertSuperuserHandle = async () => {
+    const ok = await confirm(
+      "Upsert Superuser",
+      "Are you sure you want to create or update the superuser for this service?",
+    );
+    if (ok) {
+      upsertSuperuserMutation.mutate(service_id);
+    }
   };
 
   return (
@@ -30,51 +68,60 @@ export const DefaultCredentialsCard: FC<Props> = ({ username, password }) => {
           These credentials were generated automatically. You must change them
           after accessing the platform.
         </p>
-
-        <div className="space-y-2">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <span className="font-semibold">Username:</span>
-              <div className="truncate">{username}</div>
+        {username && password && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <span className="font-semibold">Username:</span>
+                <div className="truncate">{username}</div>
+              </div>
+              <button
+                className="btn btn-ghost btn-sm"
+                onClick={() => handleCopy(username, "username")}
+              >
+                {copiedField === "username" ? (
+                  <Check size={18} />
+                ) : (
+                  <Copy size={18} />
+                )}
+              </button>
             </div>
-            <button
-              className="btn btn-ghost btn-sm"
-              onClick={() => handleCopy(username, "username")}
-            >
-              {copiedField === "username" ? (
-                <Check size={18} />
-              ) : (
-                <Copy size={18} />
-              )}
-            </button>
-          </div>
 
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <span className="font-semibold">Password:</span>
-              <div className="truncate">{password}</div>
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <span className="font-semibold">Password:</span>
+                <div className="truncate">{password}</div>
+              </div>
+              <button
+                className="btn btn-ghost btn-sm"
+                onClick={() => handleCopy(password, "password")}
+              >
+                {copiedField === "password" ? (
+                  <Check size={18} />
+                ) : (
+                  <Copy size={18} />
+                )}
+              </button>
             </div>
-            <button
-              className="btn btn-ghost btn-sm"
-              onClick={() => handleCopy(password, "password")}
-            >
-              {copiedField === "password" ? (
-                <Check size={18} />
-              ) : (
-                <Copy size={18} />
-              )}
-            </button>
           </div>
-        </div>
+        )}
 
-        {/* <div className="card-actions justify-end">
+        <div
+          className={classNames("card-actions", {
+            "justify-end": username && password,
+          })}
+        >
           <button
-            className="btn btn-outline btn-error btn-sm"
-            onClick={onResetCredentials}
+            className={classNames("btn btn-outline btn-sm", {
+              "btn-error": username && password,
+              "btn-success w-full": !(username && password),
+            })}
+            onClick={onUpsertSuperuserHandle}
+            disabled={upsertSuperuserMutation.isPending}
           >
-            Reset Credentials
+            Upsert Superuser
           </button>
-        </div> */}
+        </div>
       </div>
     </div>
   );

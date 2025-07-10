@@ -218,3 +218,21 @@ func (s *ServiceRepository) CleanServiceInstallToken(ctx context.Context, _pb_in
 	}
 	return nil
 }
+
+func (s *ServiceRepository) UpdateSuperuser(ctx context.Context, serviceID, email, password string) error {
+	db := s.app.DB()
+
+	query := fmt.Sprintf(
+		`UPDATE %s 
+			SET boot_user_email = {:email},
+				boot_user_password = {:password} 
+			WHERE id = {:id}`,
+		collections.Services,
+	)
+	_, execErr := db.NewQuery(query).
+		WithContext(ctx).
+		Bind(dbx.Params{"id": serviceID, "email": email, "password": password}).
+		Execute()
+
+	return execErr
+}
