@@ -225,7 +225,8 @@ func (s *ServiceRepository) UpdateSuperuser(ctx context.Context, serviceID, emai
 	query := fmt.Sprintf(
 		`UPDATE %s 
 			SET boot_user_email = {:email},
-				boot_user_password = {:password} 
+				boot_user_password = {:password},
+				_pb_install = ''
 			WHERE id = {:id}`,
 		collections.Services,
 	)
