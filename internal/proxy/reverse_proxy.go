@@ -11,7 +11,8 @@ import (
 	"net/url"
 	"pb_launcher/configs"
 	http01 "pb_launcher/internal/certificates/http_01"
-	"pb_launcher/internal/proxy/domain"
+	launcherdomain "pb_launcher/internal/launcher/domain"
+	proxydomain "pb_launcher/internal/proxy/domain"
 	"pb_launcher/utils/networktools"
 	"strconv"
 	"strings"
@@ -21,36 +22,39 @@ import (
 )
 
 type DynamicReverseProxy struct {
-	discovery         *domain.ServiceDiscovery
-	domainDiscovery   *domain.DomainServiceDiscovery
-	apiDomain         string
-	apiAddress        string
-	useHttps          bool
-	skipHttpsRedirect bool
-	httpsPort         string
-	timeout           time.Duration
-	http01Store       *http01.Http01ChallengeAddressPublisher
+	discovery           *proxydomain.ServiceDiscovery
+	domainDiscovery     *proxydomain.DomainServiceDiscovery
+	installTokenUsecase *launcherdomain.CleanServiceInstallTokenUsecase
+	apiDomain           string
+	apiAddress          string
+	useHttps            bool
+	skipHttpsRedirect   bool
+	httpsPort           string
+	timeout             time.Duration
+	http01Store         *http01.Http01ChallengeAddressPublisher
 }
 
 var _ http.Handler = (*DynamicReverseProxy)(nil)
 
 func NewDynamicReverseProxy(
-	discovery *domain.ServiceDiscovery,
-	domainDiscovery *domain.DomainServiceDiscovery,
+	discovery *proxydomain.ServiceDiscovery,
+	domainDiscovery *proxydomain.DomainServiceDiscovery,
+	installTokenUsecase *launcherdomain.CleanServiceInstallTokenUsecase,
 	http01Store *http01.Http01ChallengeAddressPublisher,
 	cfg configs.Config,
 	pbConf *apis.ServeConfig,
 ) *DynamicReverseProxy {
 	return &DynamicReverseProxy{
-		discovery:         discovery,
-		domainDiscovery:   domainDiscovery,
-		http01Store:       http01Store,
-		apiDomain:         cfg.GetDomain(),
-		useHttps:          cfg.IsHttpsEnabled(),
-		skipHttpsRedirect: cfg.IsHttpsRedirectDisabled(),
-		httpsPort:         cfg.GetBindHttpsPort(),
-		apiAddress:        pbConf.HttpAddr,
-		timeout:           15 * time.Second,
+		discovery:           discovery,
+		domainDiscovery:     domainDiscovery,
+		installTokenUsecase: installTokenUsecase,
+		http01Store:         http01Store,
+		apiDomain:           cfg.GetDomain(),
+		useHttps:            cfg.IsHttpsEnabled(),
+		skipHttpsRedirect:   cfg.IsHttpsRedirectDisabled(),
+		httpsPort:           cfg.GetBindHttpsPort(),
+		apiAddress:          pbConf.HttpAddr,
+		timeout:             15 * time.Second,
 	}
 }
 
@@ -102,6 +106,18 @@ func (rp *DynamicReverseProxy) proxyErrorHandler(w http.ResponseWriter, r *http.
 	http.Error(w, "upstream error", http.StatusBadGateway)
 }
 
+const superusersEndpoint = "/api/collections/_superusers/records"
+
+func (rp *DynamicReverseProxy) proxyModifyResponse(r *http.Response) error {
+	if r.Request.Method == http.MethodPost &&
+		strings.HasPrefix(r.Request.URL.Path, superusersEndpoint) &&
+		r.StatusCode == 200 {
+		authorization := r.Request.Header.Get("Authorization")
+		rp.installTokenUsecase.CleanInstallToken(r.Request.Context(), authorization)
+	}
+	return nil
+}
+
 func (rp *DynamicReverseProxy) buildReverseProxy(target *url.URL) *httputil.ReverseProxy {
 	proxy := httputil.NewSingleHostReverseProxy(target)
 
@@ -110,7 +126,7 @@ func (rp *DynamicReverseProxy) buildReverseProxy(target *url.URL) *httputil.Reve
 		originalDirector(req)
 		networktools.PrepareProxyHeaders(req, target)
 	}
-
+	proxy.ModifyResponse = rp.proxyModifyResponse
 	proxy.ErrorHandler = rp.proxyErrorHandler
 	return proxy
 }

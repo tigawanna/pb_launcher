@@ -13,5 +13,6 @@ type ServiceRepository interface {
 	MarkServiceStoped(ctx context.Context, id string) error
 	MarkServiceFailure(ctx context.Context, id string, errorMessage string) error
 	MarkServiceRunning(ctx context.Context, id string, listenIplistenIp, port string) error
-	BootCompleted(ctx context.Context, id string) error
+	SetServiceInstallToken(ctx context.Context, serviceID string, _pb_install string) error
+	CleanServiceInstallToken(ctx context.Context, _pb_install string) error
 }

@@ -30,11 +30,9 @@ func init() {
 				MinSelect:    1,
 				MaxSelect:    1,
 			},
-			&core.SelectField{
-				Name:      "boot_completed",
-				System:    true,
-				Values:    []string{"no", "yes"},
-				MaxSelect: 1,
+			&core.TextField{
+				Name:   "_pb_install",
+				System: true,
 			},
 			&core.EmailField{
 				Name:   "boot_user_email",
@@ -81,6 +79,9 @@ func init() {
 				Name:   "deleted",
 				System: true,
 			},
+		)
+		services.Indexes = append(services.Indexes,
+			`CREATE INDEX idx_services__pb_install ON services(_pb_install)`,
 		)
 
 		services.ListRule = utils.StrPointer(`@request.auth.id != ""`)

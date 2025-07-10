@@ -8,6 +8,7 @@ interface _Service {
   name: string;
   status: "idle" | "pending" | "running" | "stopped" | "failure";
 
+  _pb_install: string;
   boot_user_email: string;
   boot_user_password: string;
   last_started: string;
@@ -78,6 +79,7 @@ export const serviceService = {
     "id",
     "name",
     "status",
+    "_pb_install",
     "boot_user_email",
     "boot_user_password",
     "last_started",
@@ -111,6 +113,7 @@ export const serviceService = {
       id: service.id,
       name: service.name,
       status: commands.length > 0 ? "pending" : service.status,
+      _pb_install: service._pb_install ?? "",
       boot_user_email: service.boot_user_email,
       boot_user_password: service.boot_user_password,
       last_started: service.last_started,
@@ -145,6 +148,7 @@ export const serviceService = {
         id: s.id,
         name: s.name,
         status: pendingServices.has(s.id) ? "pending" : s.status,
+        _pb_install: s._pb_install ?? "",
         boot_user_email: s.boot_user_email,
         boot_user_password: s.boot_user_password,
         last_started: s.last_started,

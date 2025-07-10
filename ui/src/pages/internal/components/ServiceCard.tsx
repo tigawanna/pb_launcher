@@ -45,17 +45,21 @@ export const ServiceCard: FC<Props> = ({
     const domain = proxyInfo.base_domain
       ? `${service.id}.${proxyInfo.base_domain}`
       : "--";
-    return formatUrl(
+    const urlStr = formatUrl(
       proxyInfo.use_https ? "https" : "http",
       domain,
       proxyInfo.use_https ? proxyInfo.https_port : proxyInfo.http_port,
     );
+    if (service._pb_install)
+      return `${urlStr}/_/#/pbinstal/${service._pb_install}`;
+    return urlStr;
   }, [
     proxyInfo.base_domain,
     proxyInfo.http_port,
     proxyInfo.https_port,
     proxyInfo.use_https,
     service.id,
+    service._pb_install,
   ]);
 
   const handleCopy = (value: string, field: "url") => {

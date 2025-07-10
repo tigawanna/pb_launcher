@@ -27,5 +27,6 @@ var Module = fx.Module("launcher",
 			fx.As(new(services.BinaryFinder)),
 		),
 	),
+	fx.Provide(domain.NewCleanServiceInstallTokenUsecase),
 	fx.Provide(domain.NewLauncherManager),
 )

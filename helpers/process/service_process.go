@@ -75,6 +75,7 @@ func (p *Process) Start() error {
 	p.closeChan = make(chan struct{})
 
 	cmd := exec.Command(p.command, p.args...)
+	cmd.Env = []string{}
 	if p.options.stdout != nil {
 		cmd.Stdout = p.options.stdout
 	}

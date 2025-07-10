@@ -35,7 +35,7 @@ func (s *ServiceRepository) services(ids ...string) ([]models.Service, error) {
 			r.version, 
 			r.repository, 
 			rpo.exec_file_pattern,
-			s.boot_completed,
+			s._pb_install,
 			s.boot_user_email,
 			s.boot_user_password,
 			s.deleted
@@ -69,7 +69,7 @@ func (s *ServiceRepository) services(ids ...string) ([]models.Service, error) {
 		version, _ := row["version"]
 		repository, _ := row["repository"]
 		execPattern, _ := row["exec_file_pattern"]
-		bootCompleted, _ := row["boot_completed"]
+		_pb_install, _ := row["_pb_install"]
 		bootUserEmail, _ := row["boot_user_email"]
 		bootUserPassword, _ := row["boot_user_password"]
 		deleted, _ := row["deleted"]
@@ -81,16 +81,16 @@ func (s *ServiceRepository) services(ids ...string) ([]models.Service, error) {
 		}
 
 		services = append(services, models.Service{
-			ID:               id.String,
-			Status:           models.ServiceStatus(status.String),
-			RestartPolicy:    models.RestartPolicy(restartPolicy.String),
-			Version:          version.String,
-			RepositoryID:     repository.String,
-			ExecFilePattern:  ExecFilePattern,
-			BootUserEmail:    bootUserEmail.String,
-			BootUserPassword: bootUserPassword.String,
-			BootCompleted:    bootCompleted.String == "yes",
-			Deleted:          deleted.String,
+			ID:                id.String,
+			Status:            models.ServiceStatus(status.String),
+			RestartPolicy:     models.RestartPolicy(restartPolicy.String),
+			Version:           version.String,
+			RepositoryID:      repository.String,
+			ExecFilePattern:   ExecFilePattern,
+			BootPBInstallPath: _pb_install.String,
+			BootUserEmail:     bootUserEmail.String,
+			BootUserPassword:  bootUserPassword.String,
+			Deleted:           deleted.String,
 		})
 	}
 
@@ -186,15 +186,35 @@ func (s *ServiceRepository) MarkServiceRunning(ctx context.Context, id, listenIp
 	return nil
 }
 
-// BootCompleted implements repositories.ServiceRepository.
-func (s *ServiceRepository) BootCompleted(ctx context.Context, id string) error {
+// SetPbInstallToken implements repositories.ServiceRepository.
+func (s *ServiceRepository) SetServiceInstallToken(ctx context.Context, id string, _pb_install string) error {
 	record, err := s.app.FindRecordById(collections.Services, id)
 	if err != nil {
 		return err
 	}
-	record.Set("boot_completed", "yes")
+	record.Set("_pb_install", _pb_install)
 	if err := s.app.Save(record); err != nil {
 		return err
+	}
+	return nil
+}
+
+// CleanPbInstallToken implements repositories.ServiceRepository.
+func (s *ServiceRepository) CleanServiceInstallToken(ctx context.Context, _pb_install string) error {
+	db := s.app.DB()
+
+	qry := fmt.Sprintf(
+		"UPDATE %s SET _pb_install = '' WHERE _pb_install = {:token}",
+		collections.Services,
+	)
+
+	_, execErr := db.NewQuery(qry).
+		WithContext(ctx).
+		Bind(dbx.Params{"token": _pb_install}).
+		Execute()
+
+	if execErr != nil {
+		slog.Error("update services table", "error", execErr)
 	}
 	return nil
 }

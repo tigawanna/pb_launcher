@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -13,24 +14,29 @@ import (
 	"pb_launcher/internal/launcher/domain/models"
 	"pb_launcher/internal/launcher/domain/repositories"
 	"pb_launcher/internal/launcher/domain/services"
+	"pb_launcher/utils/iouitls"
 	"pb_launcher/utils/networktools"
+	"regexp"
+	"strings"
 	"sync"
 )
 
 type LauncherManager struct {
 	sync.RWMutex
-	dataDir           string
-	ipAddress         string
-	repository        repositories.ServiceRepository
-	comandsRepository repositories.CommandsRepository
-	finder            services.BinaryFinder
-	lstore            *logstore.ServiceLogDB
+	dataDir             string
+	ipAddress           string
+	installTokenUsecase *CleanServiceInstallTokenUsecase
+	repository          repositories.ServiceRepository
+	comandsRepository   repositories.CommandsRepository
+	finder              services.BinaryFinder
+	lstore              *logstore.ServiceLogDB
 	//
 	processList map[string]*process.Process
 	errChan     chan process.ProcessErrorMessage
 }
 
 func NewLauncherManager(
+	installTokenUsecase *CleanServiceInstallTokenUsecase,
 	repository repositories.ServiceRepository,
 	comandsRepository repositories.CommandsRepository,
 	finder services.BinaryFinder,
@@ -38,14 +44,15 @@ func NewLauncherManager(
 	c configs.Config,
 ) *LauncherManager {
 	lm := &LauncherManager{
-		repository:        repository,
-		comandsRepository: comandsRepository,
-		finder:            finder,
-		lstore:            lstore,
-		dataDir:           c.GetDataDir(),
-		ipAddress:         c.GetBindAddress(),
-		processList:       make(map[string]*process.Process),
-		errChan:           make(chan process.ProcessErrorMessage, 10),
+		installTokenUsecase: installTokenUsecase,
+		repository:          repository,
+		comandsRepository:   comandsRepository,
+		finder:              finder,
+		lstore:              lstore,
+		dataDir:             c.GetDataDir(),
+		ipAddress:           c.GetBindAddress(),
+		processList:         make(map[string]*process.Process),
+		errChan:             make(chan process.ProcessErrorMessage, 10),
 	}
 	go lm.handleServiceErrors()
 	return lm
@@ -101,26 +108,23 @@ func (lm *LauncherManager) buildArgs(serviceID string) ([]string, error) {
 }
 
 // initializeBootUser sets up the initial boot user for the service instance.
-func (lm *LauncherManager) initializeBootUser(ctx context.Context,
-	service models.Service, binaryPath string, baseArgs []string) error {
-
-	if service.BootCompleted {
-		return nil
+func (lm *LauncherManager) UpsertInitialSuperuser(ctx context.Context, service models.Service) error {
+	binaryPath, err := lm.finder.FindBinary(ctx, service.RepositoryID, service.Version, service.ExecFilePattern)
+	if err != nil {
+		slog.Error("failed to find binary", "serviceID", service.ID, "error", err)
+		return err
+	}
+	baseArgs, err := lm.buildArgs(service.ID)
+	if err != nil {
+		slog.Error("failed to build args", "serviceID", service.ID, "error", err)
+		return err
 	}
 
-	args := append(baseArgs, "superuser", "create", service.BootUserEmail, service.BootUserPassword)
+	args := append(baseArgs, "superuser", "upsert", service.BootUserEmail, service.BootUserPassword)
 	cmd := exec.CommandContext(ctx, binaryPath, args...)
 
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		errorMessage := fmt.Sprintf("boot user :%s", err.Error())
-		if updateErr := lm.repository.MarkServiceFailure(ctx, service.ID, errorMessage); updateErr != nil {
-			slog.Error("failed to update service error status",
-				"serviceID", service.ID,
-				"error", updateErr,
-				"originalError", errorMessage,
-			)
-		}
 		slog.Error("failed to initialize boot user",
 			"service", service.ID,
 			"email", service.BootUserEmail,
@@ -129,16 +133,28 @@ func (lm *LauncherManager) initializeBootUser(ctx context.Context,
 		)
 		return err
 	}
-
-	if err := lm.repository.BootCompleted(ctx, service.ID); err != nil {
-		slog.Error("failed to update boot completed flag",
-			"service", service.ID,
-			"error", err,
-		)
-		return err
-	}
-
 	return nil
+}
+
+var pbInstallURLRegex = regexp.MustCompile(`https?://[^/]+/_/#/pbinstal/([a-zA-Z0-9._\-]+)`)
+
+func (lm *LauncherManager) buildStdoutHandler(serviceID string) iouitls.WriterInterceptorHandler {
+	pbpbinstal := []byte("/pbinstal/")
+	return func(data []byte) {
+		if !bytes.Contains(data, pbpbinstal) {
+			return
+		}
+		searchData := data
+		if len(data) > 2048 {
+			searchData = data[:2048]
+		}
+		matched := pbInstallURLRegex.FindSubmatch(searchData)
+		if len(matched) < 2 {
+			return
+		}
+		token := strings.TrimSpace(string(matched[1]))
+		go lm.installTokenUsecase.SetInstallToken(context.Background(), serviceID, token)
+	}
 }
 
 func (lm *LauncherManager) startService(ctx context.Context, service models.Service) error {
@@ -165,19 +181,20 @@ func (lm *LauncherManager) startService(ctx context.Context, service models.Serv
 		return err
 	}
 
-	if err := lm.initializeBootUser(ctx, service, executablePath, baseArgs); err != nil {
-		return err
-	}
-
 	listenIp := fmt.Sprintf("%s:%d", ip, port)
 	serveArgs := append([]string{"serve"}, append(baseArgs, "--http", listenIp)...)
+
+	stdout := iouitls.NewWriterInterceptor(
+		lm.lstore.NewWriter(service.ID, logstore.StreamStdout),
+		lm.buildStdoutHandler(service.ID),
+	)
 
 	newProcess := process.New(
 		service.ID,
 		executablePath,
 		serveArgs,
 		process.WithErrorChan(lm.errChan),
-		process.WithStdout(lm.lstore.NewWriter(service.ID, logstore.StreamStdout)),
+		process.WithStdout(stdout),
 		process.WithStderr(lm.lstore.NewWriter(service.ID, logstore.StreamStderr)),
 	)
 

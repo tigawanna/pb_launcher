@@ -26,8 +26,8 @@ type Service struct {
 	Version         string
 	ExecFilePattern *regexp.Regexp
 	//
-	BootCompleted    bool
-	BootUserEmail    string
-	BootUserPassword string
-	Deleted          string
+	BootPBInstallPath string
+	BootUserEmail     string
+	BootUserPassword  string
+	Deleted           string
 }
