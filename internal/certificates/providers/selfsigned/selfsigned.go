@@ -9,8 +9,8 @@ import (
 	"encoding/pem"
 	"math/big"
 	"pb_launcher/internal/certificates/tlscommon"
+	"pb_launcher/utils/domainutil"
 
-	"strings"
 	"time"
 )
 
@@ -33,11 +33,8 @@ func (s *SelfSignedProvider) RequestCertificate(domain string) (*tlscommon.Certi
 		return nil, err
 	}
 
-	dnsNames := []string{domain}
-	if after, ok := strings.CutPrefix(domain, "*."); ok {
-		base := after
-		dnsNames = append(dnsNames, base)
-	}
+	baseDomain := domainutil.BaseDomain(domain)
+	wildcardDomain := domainutil.ToWildcardDomain(domain)
 
 	template := x509.Certificate{
 		SerialNumber: serialNumber,
@@ -46,7 +43,7 @@ func (s *SelfSignedProvider) RequestCertificate(domain string) (*tlscommon.Certi
 		NotAfter:     time.Now().AddDate(1, 0, 0),
 		KeyUsage:     x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
 		ExtKeyUsage:  []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
-		DNSNames:     dnsNames,
+		DNSNames:     []string{baseDomain, wildcardDomain},
 	}
 
 	derBytes, err := x509.CreateCertificate(rand.Reader, &template, &template, &priv.PublicKey, priv)

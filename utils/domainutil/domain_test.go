@@ -23,6 +23,26 @@ func TestIsWildcardDomain(t *testing.T) {
 	}
 }
 
+func TestBaseDomain(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{"*.example.com", "example.com"},
+		{"example.com", "example.com"},
+		{"*.sub.example.com", "sub.example.com"},
+		{"sub.example.com", "sub.example.com"},
+		{"*", "*"},
+	}
+
+	for _, tt := range tests {
+		result := domainutil.BaseDomain(tt.input)
+		if result != tt.expected {
+			t.Errorf("BaseDomain(%q) = %q; want %q", tt.input, result, tt.expected)
+		}
+	}
+}
+
 func TestSubdomainMatchesWildcard(t *testing.T) {
 	tests := []struct {
 		subdomain string

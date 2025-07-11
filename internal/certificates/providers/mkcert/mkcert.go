@@ -5,8 +5,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"pb_launcher/internal/certificates/tlscommon"
-
-	"strings"
+	"pb_launcher/utils/domainutil"
 )
 
 type MkcertProvider struct{}
@@ -27,11 +26,13 @@ func (s *MkcertProvider) RequestCertificate(domain string) (*tlscommon.Certifica
 	certPath := filepath.Join(tmpDir, "cert.pem")
 	keyPath := filepath.Join(tmpDir, "key.pem")
 
-	args := []string{"-cert-file", certPath, "-key-file", keyPath}
-	if after, ok := strings.CutPrefix(domain, "*."); ok {
-		args = append(args, domain, after)
-	} else {
-		args = append(args, domain)
+	baseDomain := domainutil.BaseDomain(domain)
+	wildcardDomain := domainutil.ToWildcardDomain(domain)
+
+	args := []string{
+		"-cert-file", certPath,
+		"-key-file", keyPath,
+		baseDomain, wildcardDomain,
 	}
 
 	cmd := exec.Command("mkcert", args...)

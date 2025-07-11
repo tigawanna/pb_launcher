@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"pb_launcher/configs"
 	"pb_launcher/internal/certificates/tlscommon"
+	"pb_launcher/utils/domainutil"
 	"time"
 
 	"github.com/go-acme/lego/v4/certcrypto"
@@ -92,8 +93,11 @@ func (s *CloudflareProvider) RequestCertificate(domain string) (*tlscommon.Certi
 		return nil, err
 	}
 
+	baseDomain := domainutil.BaseDomain(domain)
+	wildcardDomain := domainutil.ToWildcardDomain(domain)
+
 	request := certificate.ObtainRequest{
-		Domains: []string{domain, "*." + domain},
+		Domains: []string{baseDomain, wildcardDomain},
 		Bundle:  true,
 	}
 

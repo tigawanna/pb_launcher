@@ -7,6 +7,13 @@ func ToWildcardDomain(domain string) string {
 	return "*." + domain
 }
 
+func BaseDomain(domain string) string {
+	if after, ok := strings.CutPrefix(domain, "*."); ok {
+		return after
+	}
+	return domain
+}
+
 func IsWildcardDomain(domain string) bool {
 	return strings.HasPrefix(domain, "*.")
 }
