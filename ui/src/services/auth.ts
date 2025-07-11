@@ -47,6 +47,9 @@ export const authService = {
     const users = pb.collection(USERS_COLLECTION);
     await users.authWithPassword(credentials.email, credentials.password);
   },
-
+  refresh: async () => {
+    const users = pb.collection(USERS_COLLECTION);
+    await users.authRefresh();
+  },
   logout: async () => pb.authStore.clear(),
 };
