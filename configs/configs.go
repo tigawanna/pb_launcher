@@ -165,10 +165,10 @@ func (c *configs) GetDomain() string {
 }
 
 func (c *configs) GetListenIPAddress() string {
-	if c.BindAddress == "" {
+	if c.ListenAddress == "" {
 		return "0.0.0.0"
 	}
-	return c.BindAddress
+	return c.ListenAddress
 }
 
 func (c *configs) GetHttpPort() string {
