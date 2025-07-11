@@ -51,7 +51,9 @@ export const DomainCard: FC<Props> = ({
             {fmtdomain.name}
           </span>
           <a
-            href={url ?? `${fmtdomain.protocol}://${fmtdomain.name}`}
+            href={
+              url ? `${url}/_/` : `${fmtdomain.protocol}://${fmtdomain.name}/_/`
+            }
             target="_blank"
             rel="noopener noreferrer"
             className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"

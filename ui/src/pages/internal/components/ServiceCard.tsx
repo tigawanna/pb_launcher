@@ -54,7 +54,7 @@ export const ServiceCard: FC<Props> = ({
     );
     if (service._pb_install)
       return `${urlStr}/_/#/pbinstal/${service._pb_install}`;
-    return urlStr;
+    return `${urlStr}/_/`;
   }, [
     proxyInfo.base_domain,
     proxyInfo.http_port,
