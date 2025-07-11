@@ -24,7 +24,7 @@ func RunHTTPSProxy(
 
 	wildcardDomain := domainutil.ToWildcardDomain(cfg.GetDomain())
 
-	addr := fmt.Sprintf("%s:%s", cfg.GetBindAddress(), cfg.GetBindHttpsPort())
+	addr := fmt.Sprintf("%s:%s", cfg.GetListenIPAddress(), cfg.GetHttpsPort())
 	server := &http.Server{
 		Addr: addr,
 		TLSConfig: &tls.Config{

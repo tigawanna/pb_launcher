@@ -52,7 +52,7 @@ func NewDynamicReverseProxy(
 		apiDomain:           cfg.GetDomain(),
 		useHttps:            cfg.IsHttpsEnabled(),
 		skipHttpsRedirect:   cfg.IsHttpsRedirectDisabled(),
-		httpsPort:           cfg.GetBindHttpsPort(),
+		httpsPort:           cfg.GetHttpsPort(),
 		apiAddress:          pbConf.HttpAddr,
 		timeout:             15 * time.Second,
 	}

@@ -32,7 +32,7 @@ func NewHTTP01TLSCertificateRequestService(
 ) *HTTP01TLSCertificateRequestService {
 	return &HTTP01TLSCertificateRequestService{
 		publicher: publicher,
-		ipAddress: c.GetBindAddress(),
+		ipAddress: c.GetListenIPAddress(),
 		acmeEmail: c.GetAcmeEmail(),
 	}
 }

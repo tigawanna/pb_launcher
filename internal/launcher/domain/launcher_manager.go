@@ -50,7 +50,7 @@ func NewLauncherManager(
 		finder:              finder,
 		lstore:              lstore,
 		dataDir:             c.GetDataDir(),
-		ipAddress:           c.GetBindAddress(),
+		ipAddress:           c.GetBindIPAddress(),
 		processList:         make(map[string]*process.Process),
 		errChan:             make(chan process.ProcessErrorMessage, 10),
 	}

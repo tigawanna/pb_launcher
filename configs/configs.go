@@ -19,6 +19,7 @@ type TlsConfig interface {
 }
 
 type Config interface {
+	GetBindIPAddress() string
 	GetReleaseSyncInterval() time.Duration
 	GetCommandCheckInterval() time.Duration
 	GetCertificateCheckInterval() time.Duration
@@ -32,13 +33,14 @@ type Config interface {
 	GetCertRequestExecutorInterval() time.Duration
 
 	GetDomain() string
-	GetBindAddress() string
-	GetBindPort() string
+
+	GetListenIPAddress() string
+	GetHttpPort() string
 
 	IsHttpsEnabled() bool
 	IsHttpsRedirectDisabled() bool
 
-	GetBindHttpsPort() string
+	GetHttpsPort() string
 	GetAcmeEmail() string
 
 	GetTlsConfig() TlsConfig
@@ -69,16 +71,18 @@ func (c *tls_configs) GetProp(key string) (string, bool) {
 }
 
 type configs struct {
+	BindAddress              string `mapstructure:"bind_address" yaml:"bind_address"`                             // default: 127.0.0.1
 	ReleaseSyncInterval      string `mapstructure:"release_sync_interval" yaml:"release_sync_interval"`           // default: 10m
 	CommandCheckInterval     string `mapstructure:"command_check_interval" yaml:"command_check_interval"`         // default: 10ms
 	CertificateCheckInterval string `mapstructure:"certificate_check_interval" yaml:"certificate_check_interval"` // default: 1h
 
-	DownloadDir                 string `mapstructure:"download_dir" yaml:"download_dir"`         // default: ./downloads
-	CertificatesDir             string `mapstructure:"certificates_dir" yaml:"certificates_dir"` // default: ./.certificates
-	DataDir                     string `mapstructure:"data_dir" yaml:"data_dir"`                 // default: ./data
-	Domain                      string `mapstructure:"domain" yaml:"domain"`
-	BindAddress                 string `mapstructure:"bind_address" yaml:"bind_address"` // default: 127.0.0.1
-	BindPort                    string `mapstructure:"bind_port" yaml:"bind_port"`       // default: 8072
+	DownloadDir     string `mapstructure:"download_dir" yaml:"download_dir"`         // default: ./downloads
+	CertificatesDir string `mapstructure:"certificates_dir" yaml:"certificates_dir"` // default: ./.certificates
+	DataDir         string `mapstructure:"data_dir" yaml:"data_dir"`                 // default: ./data
+	Domain          string `mapstructure:"domain" yaml:"domain"`
+
+	ListenAddress               string `mapstructure:"listen_address" yaml:"listen_address"` // default: 0.0.0.0
+	HttpPort                    string `mapstructure:"http_port" yaml:"http_port"`           // default: 8072
 	Https                       bool   `mapstructure:"https" yaml:"https"`
 	DisableHttpsRedirect        bool   `mapstructure:"disable_https_redirect" yaml:"disable_https_redirect"`
 	HttpsPort                   string `mapstructure:"https_port" yaml:"https_port"`                                         // default: 8443
@@ -93,6 +97,13 @@ type configs struct {
 }
 
 var _ Config = (*configs)(nil)
+
+func (c *configs) GetBindIPAddress() string {
+	if c.BindAddress == "" {
+		return "127.0.0.1"
+	}
+	return c.BindAddress
+}
 
 const min_sync_interval = 5 * time.Minute
 const min_command_check_interval = 10 * time.Second
@@ -153,24 +164,24 @@ func (c *configs) GetDomain() string {
 	return strings.Split(c.Domain, ":")[0]
 }
 
-func (c *configs) GetBindAddress() string {
+func (c *configs) GetListenIPAddress() string {
 	if c.BindAddress == "" {
-		return "127.0.0.1"
+		return "0.0.0.0"
 	}
 	return c.BindAddress
 }
 
-func (c *configs) GetBindPort() string {
-	if c.BindPort == "" {
+func (c *configs) GetHttpPort() string {
+	if c.HttpPort == "" {
 		return "7080"
 	}
-	return c.BindPort
+	return c.HttpPort
 }
 
 func (c *configs) IsHttpsEnabled() bool          { return c.Https }
 func (c *configs) IsHttpsRedirectDisabled() bool { return c.DisableHttpsRedirect }
 
-func (c *configs) GetBindHttpsPort() string {
+func (c *configs) GetHttpsPort() string {
 	if c.HttpsPort == "" {
 		return "8443"
 	}
@@ -256,17 +267,25 @@ func LoadConfigs(configPath string) (Config, error) {
 	c.DataDir = strings.TrimSpace(c.DataDir)
 	c.Domain = strings.TrimSpace(c.Domain)
 	c.BindAddress = strings.TrimSpace(c.BindAddress)
-	c.BindPort = strings.TrimSpace(c.BindPort)
+
+	c.ListenAddress = strings.TrimSpace(c.ListenAddress)
+	c.HttpPort = strings.TrimSpace(c.HttpPort)
 	c.HttpsPort = strings.TrimSpace(c.HttpsPort)
 	c.AcmeEmail = strings.TrimSpace(c.AcmeEmail)
 
-	if net.ParseIP(c.GetBindAddress()) == nil {
+	if net.ParseIP(c.GetBindIPAddress()) == nil {
 		slog.Error("Invalid bind_address: not a valid IP address",
-			slog.String("value", c.GetBindAddress()))
+			slog.String("value", c.GetBindIPAddress()))
 		return nil, errors.New("invalid bind_address")
 	}
 
-	portNum, err := strconv.Atoi(c.GetBindPort())
+	if net.ParseIP(c.GetListenIPAddress()) == nil {
+		slog.Error("Invalid listen_address: not a valid IP address",
+			slog.String("value", c.GetListenIPAddress()))
+		return nil, errors.New("invalid listen_address")
+	}
+
+	portNum, err := strconv.Atoi(c.GetHttpPort())
 	if err != nil || portNum < 1 || portNum > 65535 {
 		return nil, errors.New("invalid bind_port: must be an integer between 1 and 65535")
 	}

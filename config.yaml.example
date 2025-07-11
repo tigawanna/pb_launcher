@@ -1,9 +1,17 @@
 # Network settings
 domain: pb.labenv.test
+
+# network address where PocketBase instances listen  
+# for internal use only behind the proxy  
 bind_address: 127.0.0.1
-bind_port: "7080"
+
+
+listen_address: 0.0.0.0
+http_port: "7080"
+
 https: false
 https_port: "8443"
+
 disable_https_redirect: false
 
 # Paths

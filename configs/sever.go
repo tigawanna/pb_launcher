@@ -8,7 +8,7 @@ import (
 )
 
 func NewPBServeConfig(c Config) (*apis.ServeConfig, error) {
-	ip, port, err := networktools.GetAvailablePort(c.GetBindAddress())
+	ip, port, err := networktools.GetAvailablePort(c.GetBindIPAddress())
 	if err != nil {
 		return nil, err
 	}

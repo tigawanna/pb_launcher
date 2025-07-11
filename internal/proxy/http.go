@@ -14,7 +14,7 @@ func RunHttpProxy(lc fx.Lifecycle, handler *DynamicReverseProxy, cfg configs.Con
 	mux := http.NewServeMux()
 	mux.Handle("/", handler)
 
-	addr := fmt.Sprintf("%s:%s", cfg.GetBindAddress(), cfg.GetBindPort())
+	addr := fmt.Sprintf("%s:%s", cfg.GetListenIPAddress(), cfg.GetHttpPort())
 	server := &http.Server{
 		Addr:    addr,
 		Handler: mux,

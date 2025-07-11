@@ -11,13 +11,13 @@ func PrintProxyInfo(c configs.Config) {
 	regular := color.New()
 	regular.Printf("├─ Proxy: %s\n",
 		color.CyanString(
-			networktools.BuildHostURL("http", c.GetDomain(), c.GetBindPort()),
+			networktools.BuildHostURL("http", c.GetDomain(), c.GetHttpPort()),
 		),
 	)
 	if c.IsHttpsEnabled() {
 		regular.Printf("├─ Proxy: %s\n",
 			color.CyanString(
-				networktools.BuildHostURL("https", c.GetDomain(), c.GetBindHttpsPort()),
+				networktools.BuildHostURL("https", c.GetDomain(), c.GetHttpsPort()),
 			),
 		)
 	}
