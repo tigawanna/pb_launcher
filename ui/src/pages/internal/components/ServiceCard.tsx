@@ -40,8 +40,6 @@ export const ServiceCard: FC<Props> = ({
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const { openModal } = useModal();
-  const [, copyToClipboard] = useCopyToClipboard();
-  const [copiedField, setCopiedField] = useState<"url" | null>(null);
 
   const serviceUrls = useMemo((): string[] => {
     const domains: string[] = [];
@@ -60,12 +58,6 @@ export const ServiceCard: FC<Props> = ({
       return `${urlStr}/_/`;
     });
   }, [proxyInfo, service]);
-
-  const handleCopy = (value: string, field: "url") => {
-    copyToClipboard(value);
-    setCopiedField(field);
-    setTimeout(() => setCopiedField(null), 1200);
-  };
 
   const executeAfterBlur = (fn: () => void) => {
     (document.activeElement as HTMLElement)?.blur?.();
@@ -224,30 +216,42 @@ export const ServiceCard: FC<Props> = ({
             <span className="capitalize">{service.restart_policy}</span>
           </div>
         </div>
-        {serviceUrls.map(serviceUrl => {
-          return (
-            <div key={serviceUrl} className="flex gap-8">
-              <a
-                href={serviceUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="link link-primary truncate text-xs flex-1"
-              >
-                {serviceUrl}
-              </a>
-              <div className="flex gap-4">
-                {copiedField === "url" ? (
-                  <Check className="w-4 h-4 select-none active:translate-[0.5px] cursor-pointer" />
-                ) : (
-                  <Copy
-                    className="w-4 h-4 select-none active:translate-[0.5px] cursor-pointer"
-                    onClick={() => handleCopy(serviceUrl ?? "", "url")}
-                  />
-                )}
-              </div>
-            </div>
-          );
-        })}
+        {serviceUrls.map(serviceUrl => (
+          <ServiceCardURL key={serviceUrl} serviceUrl={serviceUrl} />
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const ServiceCardURL: FC<{ serviceUrl: string }> = ({ serviceUrl }) => {
+  const [, copyToClipboard] = useCopyToClipboard();
+  const [copiedField, setCopiedField] = useState<"url" | null>(null);
+  const handleCopy = (value: string, field: "url") => {
+    copyToClipboard(value);
+    setCopiedField(field);
+    setTimeout(() => setCopiedField(null), 1200);
+  };
+
+  return (
+    <div key={serviceUrl} className="flex gap-8">
+      <a
+        href={serviceUrl}
+        target="_blank"
+        rel="noreferrer"
+        className="link link-primary truncate text-xs flex-1"
+      >
+        {serviceUrl}
+      </a>
+      <div className="flex gap-4">
+        {copiedField === "url" ? (
+          <Check className="w-4 h-4 select-none active:translate-[0.5px] cursor-pointer" />
+        ) : (
+          <Copy
+            className="w-4 h-4 select-none active:translate-[0.5px] cursor-pointer"
+            onClick={() => handleCopy(serviceUrl ?? "", "url")}
+          />
+        )}
       </div>
     </div>
   );
