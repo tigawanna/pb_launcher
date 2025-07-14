@@ -10,7 +10,7 @@ build: build-ui
 	@go build \
 	-ldflags "-X main.commit=$(shell git rev-parse --short HEAD)" \
 	-o build/pblauncher *.go
-	@cd build && zip -r pblauncher_$(version)_linux_amd64.zip pblauncher
+	@cd build && zip -r pblauncher_v$(version)_linux_amd64.zip pblauncher
 
 clean:
 	@rm -rf pb_data
