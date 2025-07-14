@@ -87,7 +87,8 @@ export const DomainCard: FC<Props> = ({
           {!readonly &&
             fmtdomain.reached_max_attempt &&
             fmtdomain.status !== "pending" &&
-            fmtdomain.protocol === "https" && (
+            fmtdomain.protocol === "https" &&
+            !fmtdomain.has_valid_ssl_cert && (
               <button
                 onClick={onValidate}
                 className={classNames(
@@ -99,7 +100,7 @@ export const DomainCard: FC<Props> = ({
                 )}
               >
                 <ShieldCheck className="w-3 h-3 text-inherit" />
-                Validar DNS
+                Validate DNS
               </button>
             )}
         </div>
