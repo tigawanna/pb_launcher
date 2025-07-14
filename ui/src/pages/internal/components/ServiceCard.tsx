@@ -43,26 +43,23 @@ export const ServiceCard: FC<Props> = ({
   const [, copyToClipboard] = useCopyToClipboard();
   const [copiedField, setCopiedField] = useState<"url" | null>(null);
 
-  const serviceUrl = useMemo(() => {
-    const domain = proxyInfo.base_domain
-      ? `${service.id}.${proxyInfo.base_domain}`
-      : "--";
-    const urlStr = formatUrl(
-      proxyInfo.use_https ? "https" : "http",
-      domain,
-      proxyInfo.use_https ? proxyInfo.https_port : proxyInfo.http_port,
-    );
-    if (service._pb_install)
-      return `${urlStr}/_/#/pbinstal/${service._pb_install}`;
-    return `${urlStr}/_/`;
-  }, [
-    proxyInfo.base_domain,
-    proxyInfo.http_port,
-    proxyInfo.https_port,
-    proxyInfo.use_https,
-    service.id,
-    service._pb_install,
-  ]);
+  const serviceUrls = useMemo((): string[] => {
+    const domains: string[] = [];
+    if (proxyInfo.base_domain) {
+      domains.push(`${service.id}.${proxyInfo.base_domain}`);
+    }
+    domains.push(...(service.domains ?? []).map(d => d.domain));
+    return domains.map(domain => {
+      const urlStr = formatUrl(
+        proxyInfo.use_https ? "https" : "http",
+        domain,
+        proxyInfo.use_https ? proxyInfo.https_port : proxyInfo.http_port,
+      );
+      if (service._pb_install)
+        return `${urlStr}/_/#/pbinstal/${service._pb_install}`;
+      return `${urlStr}/_/`;
+    });
+  }, [proxyInfo, service]);
 
   const handleCopy = (value: string, field: "url") => {
     copyToClipboard(value);
@@ -94,92 +91,102 @@ export const ServiceCard: FC<Props> = ({
       <div className="card-body">
         <div className="flex justify-between items-start">
           <h2 className="card-title text-base-content">{service.name}</h2>
-          <div ref={dropdownRef} className="dropdown dropdown-end select-none">
-            <label
-              tabIndex={0}
-              className="btn btn-sm btn-ghost btn-circle text-base-content"
+          <div className="flex gap-4 items-center">
+            <ShieldAlert
+              className="w-4 h-4 active:translate-[0.5px] relative -right-3 -top-2 text-gray-300"
+              onClick={showDefaultCredentials}
+            />
+
+            <div
+              ref={dropdownRef}
+              className="dropdown dropdown-end select-none relative -right-3 -top-2"
             >
-              <MoreVertical className="w-4 h-4" />
-            </label>
-            <ul
-              tabIndex={0}
-              className="dropdown-content menu p-2 shadow-lg bg-base-100 text-base-content rounded-box min-w-[10rem] z-[1] space-y-1"
-            >
-              <li>
-                <button
-                  className="flex items-center gap-2 w-full justify-start hover:bg-base-200 text-primary"
-                  onClick={() => executeAfterBlur(onDetails)}
-                >
-                  <Pencil className="w-4 h-4" />
-                  Details
-                </button>
-              </li>
-              <li>
-                <details className="group">
-                  <summary className="flex items-center gap-2 text-base-content cursor-pointer select-none py-1 px-2 hover:bg-base-200 rounded-md">
-                    <Power className="w-4 h-4" />
-                    <span className="font-medium">Power</span>
-                  </summary>
-                  <ul className="mt-1 space-y-1">
-                    <li>
-                      <button
-                        disabled={
-                          service.status === "running" ||
-                          service.status === "pending"
-                        }
-                        className={classNames(
-                          "flex items-center gap-2 w-full px-2 py-1 rounded-md text-left",
-                          service.status === "running" ||
+              <label
+                tabIndex={0}
+                className="btn btn-sm btn-ghost btn-circle text-base-content"
+              >
+                <MoreVertical className="w-4 h-4" />
+              </label>
+              <ul
+                tabIndex={0}
+                className="dropdown-content menu p-2 shadow-lg bg-base-100 text-base-content rounded-box min-w-[10rem] z-[1] space-y-1"
+              >
+                <li>
+                  <button
+                    className="flex items-center gap-2 w-full justify-start hover:bg-base-200 text-primary"
+                    onClick={() => executeAfterBlur(onDetails)}
+                  >
+                    <Pencil className="w-4 h-4" />
+                    Details
+                  </button>
+                </li>
+                <li>
+                  <details className="group">
+                    <summary className="flex items-center gap-2 text-base-content cursor-pointer select-none py-1 px-2 hover:bg-base-200 rounded-md">
+                      <Power className="w-4 h-4" />
+                      <span className="font-medium">Power</span>
+                    </summary>
+                    <ul className="mt-1 space-y-1">
+                      <li>
+                        <button
+                          disabled={
+                            service.status === "running" ||
                             service.status === "pending"
-                            ? "text-base-content/60 cursor-not-allowed"
-                            : "text-success hover:bg-success/10 hover:text-success",
-                        )}
-                        onClick={() => executeAfterBlur(onStart)}
-                      >
-                        Start
-                      </button>
-                    </li>
-                    <li>
-                      <button
-                        disabled={service.status !== "running"}
-                        className={classNames(
-                          "flex items-center gap-2 w-full px-2 py-1 rounded-md text-left",
-                          service.status !== "running"
-                            ? "text-base-content/60 cursor-not-allowed"
-                            : "text-warning hover:bg-warning/10 hover:text-warning",
-                        )}
-                        onClick={() => executeAfterBlur(onRestart)}
-                      >
-                        Restart
-                      </button>
-                    </li>
-                    <li>
-                      <button
-                        disabled={service.status !== "running"}
-                        className={classNames(
-                          "flex items-center gap-2 w-full px-2 py-1 rounded-md text-left",
-                          service.status !== "running"
-                            ? "text-base-content/60 cursor-not-allowed"
-                            : "text-error hover:bg-error/10 hover:text-error",
-                        )}
-                        onClick={() => executeAfterBlur(onStop)}
-                      >
-                        Stop
-                      </button>
-                    </li>
-                  </ul>
-                </details>
-              </li>
-              <li>
-                <button
-                  onClick={() => executeAfterBlur(onDelete)}
-                  className="flex items-center gap-2 w-full justify-start text-error hover:bg-base-200"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  Delete
-                </button>
-              </li>
-            </ul>
+                          }
+                          className={classNames(
+                            "flex items-center gap-2 w-full px-2 py-1 rounded-md text-left",
+                            service.status === "running" ||
+                              service.status === "pending"
+                              ? "text-base-content/60 cursor-not-allowed"
+                              : "text-success hover:bg-success/10 hover:text-success",
+                          )}
+                          onClick={() => executeAfterBlur(onStart)}
+                        >
+                          Start
+                        </button>
+                      </li>
+                      <li>
+                        <button
+                          disabled={service.status !== "running"}
+                          className={classNames(
+                            "flex items-center gap-2 w-full px-2 py-1 rounded-md text-left",
+                            service.status !== "running"
+                              ? "text-base-content/60 cursor-not-allowed"
+                              : "text-warning hover:bg-warning/10 hover:text-warning",
+                          )}
+                          onClick={() => executeAfterBlur(onRestart)}
+                        >
+                          Restart
+                        </button>
+                      </li>
+                      <li>
+                        <button
+                          disabled={service.status !== "running"}
+                          className={classNames(
+                            "flex items-center gap-2 w-full px-2 py-1 rounded-md text-left",
+                            service.status !== "running"
+                              ? "text-base-content/60 cursor-not-allowed"
+                              : "text-error hover:bg-error/10 hover:text-error",
+                          )}
+                          onClick={() => executeAfterBlur(onStop)}
+                        >
+                          Stop
+                        </button>
+                      </li>
+                    </ul>
+                  </details>
+                </li>
+                <li>
+                  <button
+                    onClick={() => executeAfterBlur(onDelete)}
+                    className="flex items-center gap-2 w-full justify-start text-error hover:bg-base-200"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Delete
+                  </button>
+                </li>
+              </ul>
+            </div>
           </div>
         </div>
 
@@ -217,30 +224,30 @@ export const ServiceCard: FC<Props> = ({
             <span className="capitalize">{service.restart_policy}</span>
           </div>
         </div>
-        <div className="flex gap-8">
-          <a
-            href={serviceUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="link link-primary truncate text-xs flex-1"
-          >
-            {serviceUrl}
-          </a>
-          <div className="flex gap-4">
-            {copiedField === "url" ? (
-              <Check className="w-4 h-4 select-none active:translate-[0.5px] cursor-pointer" />
-            ) : (
-              <Copy
-                className="w-4 h-4 select-none active:translate-[0.5px] cursor-pointer"
-                onClick={() => handleCopy(serviceUrl ?? "", "url")}
-              />
-            )}
-            <ShieldAlert
-              className="w-4 h-4 active:translate-[0.5px]"
-              onClick={showDefaultCredentials}
-            />
-          </div>
-        </div>
+        {serviceUrls.map(serviceUrl => {
+          return (
+            <div key={serviceUrl} className="flex gap-8">
+              <a
+                href={serviceUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="link link-primary truncate text-xs flex-1"
+              >
+                {serviceUrl}
+              </a>
+              <div className="flex gap-4">
+                {copiedField === "url" ? (
+                  <Check className="w-4 h-4 select-none active:translate-[0.5px] cursor-pointer" />
+                ) : (
+                  <Copy
+                    className="w-4 h-4 select-none active:translate-[0.5px] cursor-pointer"
+                    onClick={() => handleCopy(serviceUrl ?? "", "url")}
+                  />
+                )}
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

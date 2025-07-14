@@ -4,6 +4,7 @@ const CERT_REQUESTS = "cert_requests";
 
 export interface DomainDto {
   id: string;
+  service: string;
   use_https: "yes" | "no";
   domain: string;
   x_cert_request_state?: "pending" | "approved" | "failed";
@@ -13,7 +14,13 @@ export interface DomainDto {
 }
 
 export const domainsService = {
-  fetchAll: async (service_id: string) => {
+  fetchFullList: async () => {
+    const domains = pb.collection(DOMAINS_COLLECTION);
+    const records = await domains.getFullList<DomainDto>();
+    return records;
+  },
+
+  fetchAllByServiceID: async (service_id: string) => {
     const domains = pb.collection(DOMAINS_COLLECTION);
     const records = await domains.getFullList<DomainDto>({
       filter: `service="${service_id}"`,

@@ -2,6 +2,7 @@ import { joinUrls } from "../utils/url";
 import { HttpError } from "./client/errors";
 import { pb } from "./client/pb";
 import { COMANDS_COLLECTION } from "./release";
+import { domainsService, type DomainDto } from "./services_domain";
 
 interface _Service {
   id: string;
@@ -46,7 +47,7 @@ export type ServiceLog = {
 
 export const SERVICES_COLLECTION = "services";
 
-export type ServiceDto = Omit<_Service, "expand">;
+export type ServiceDto = Omit<_Service, "expand"> & { domains?: DomainDto[] };
 
 export const serviceService = {
   createServiceInstance: async (data: {
@@ -127,7 +128,7 @@ export const serviceService = {
   },
 
   fetchAllServices: async (): Promise<ServiceDto[]> => {
-    const [services, commands] = await Promise.all([
+    const [services, commands, domains] = await Promise.all([
       pb
         .collection(SERVICES_COLLECTION)
         .getFullList<
@@ -141,6 +142,7 @@ export const serviceService = {
         fields: "service",
         filter: `status="pending"`,
       }),
+      domainsService.fetchFullList(),
     ]);
     const pendingServices = new Set(commands.map(c => c.service));
     return services.map(
@@ -158,6 +160,9 @@ export const serviceService = {
         repository: s.expand.release.expand.repository.name,
         release_id: s.expand.release.id,
         release_version: s.expand.release.version,
+        domains: domains.filter(
+          d => d.service === s.id && d.x_has_valid_ssl_cert,
+        ),
       }),
     );
   },

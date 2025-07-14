@@ -23,16 +23,17 @@ export const DomainsSection: FC<Props> = ({ service_id }) => {
   const confirm = useConfirmModal();
   const { openModal } = useModal();
   const proxy = useProxyConfigs();
-  
+
   const domainsQuery = useQuery({
     queryKey: ["services", service_id, "domains"],
-    queryFn: () => domainsService.fetchAll(service_id),
+    queryFn: () => domainsService.fetchAllByServiceID(service_id),
     refetchOnMount: true,
   });
 
   const proxyDomain = useMemo((): DomainDto => {
     return {
       id: "__",
+      service: "__",
       domain: proxy.base_domain ? `${service_id}.${proxy.base_domain}` : "--",
       use_https: proxy.use_https ? "yes" : "no",
     };
