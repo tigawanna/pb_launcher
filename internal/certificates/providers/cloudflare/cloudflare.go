@@ -8,70 +8,41 @@ import (
 	"pb_launcher/utils/domainutil"
 	"time"
 
-	"github.com/go-acme/lego/v4/certcrypto"
 	"github.com/go-acme/lego/v4/certificate"
 	"github.com/go-acme/lego/v4/challenge/dns01"
-	"github.com/go-acme/lego/v4/lego"
 	"github.com/go-acme/lego/v4/providers/dns/cloudflare"
-	"github.com/go-acme/lego/v4/registration"
-	"github.com/hashicorp/go-retryablehttp"
 )
 
 type CloudflareProvider struct {
-	authToken string
-	email     string
+	clientProvider *tlscommon.LetsEncryptClientAccountProvider
+	authToken      string
+	acmeEmail      string
 }
 
 var _ tlscommon.Provider = (*CloudflareProvider)(nil)
 
-func NewCloudflareProvider(c configs.Config) (*CloudflareProvider, error) {
+func NewCloudflareProvider(c configs.Config,
+	clientProvider *tlscommon.LetsEncryptClientAccountProvider) (*CloudflareProvider, error) {
+
 	tlsConf := c.GetTlsConfig()
 
 	authToken, ok := tlsConf.GetProp("auth_token")
 	if !ok || authToken == "" {
-		return nil, errors.New("missing or empty 'auth_token' in TLS config")
-	}
-
-	email, ok := tlsConf.GetProp("email")
-	if !ok || email == "" {
-		return nil, errors.New("missing or empty 'email' in TLS config")
+		return nil, errors.New("missing or empty cloudflare 'auth_token' in TLS config")
 	}
 
 	return &CloudflareProvider{
-		authToken: authToken,
-		email:     email,
+		clientProvider: clientProvider,
+		authToken:      authToken,
+		acmeEmail:      c.GetAcmeEmail(),
 	}, nil
 }
 
 func (s *CloudflareProvider) RequestCertificate(domain string) (*tlscommon.Certificate, error) {
-	privateKey, err := certcrypto.GeneratePrivateKey(certcrypto.RSA2048)
+	client, err := s.clientProvider.SetupClient(s.acmeEmail)
 	if err != nil {
 		return nil, err
 	}
-
-	user := &tlscommon.Account{
-		Email: s.email,
-		Key:   privateKey,
-	}
-
-	config := lego.NewConfig(user)
-
-	retryClient := retryablehttp.NewClient()
-	retryClient.RetryMax = 5
-	retryClient.HTTPClient = config.HTTPClient
-	retryClient.Logger = nil
-	config.HTTPClient = retryClient.StandardClient()
-
-	client, err := lego.NewClient(config)
-	if err != nil {
-		return nil, err
-	}
-
-	resource, err := client.Registration.Register(registration.RegisterOptions{TermsOfServiceAgreed: true})
-	if err != nil {
-		return nil, err
-	}
-	user.Registration = resource
 
 	cloudflareConfig := &cloudflare.Config{
 		AuthToken:          s.authToken,

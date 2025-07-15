@@ -13,14 +13,15 @@ import (
 	"go.uber.org/fx"
 )
 
-func NewProvider(c configs.Config) (tlscommon.Provider, error) {
+func NewProvider(c configs.Config,
+	clientProvider *tlscommon.LetsEncryptClientAccountProvider) (tlscommon.Provider, error) {
 	switch provider := c.GetTlsConfig().GetProvider(); provider {
 	case "selfsigned":
 		return selfsigned.NewSelfSignedProvider(), nil
 	case "mkcert":
 		return mkcert.NewMkcertProvider(), nil
 	case "cloudflare":
-		return cloudflare.NewCloudflareProvider(c)
+		return cloudflare.NewCloudflareProvider(c, clientProvider)
 	default:
 		return nil, fmt.Errorf("%w: %s", tlscommon.ErrUnsupportedProvider, provider)
 	}
@@ -31,6 +32,7 @@ var Module = fx.Module("tls_provider",
 		fx.Private,
 		certstore.NewTlsStorer,
 	),
+	fx.Provide(tlscommon.NewLetsEncryptClientAccountProvider),
 	fx.Provide(http01.NewHttp01ChallengeAddressPublisher),
 	fx.Provide(http01.NewHTTP01TLSCertificateRequestService),
 	fx.Provide(fx.Annotate(

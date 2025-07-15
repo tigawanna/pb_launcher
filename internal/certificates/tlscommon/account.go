@@ -10,7 +10,7 @@ import (
 type Account struct {
 	Email        string                 `json:"email"`
 	Registration *registration.Resource `json:"registration"`
-	Key          crypto.PrivateKey
+	Key          crypto.PrivateKey      `json:"-"`
 }
 
 var _ registration.User = (*Account)(nil)
