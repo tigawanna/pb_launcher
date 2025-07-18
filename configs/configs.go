@@ -2,14 +2,15 @@ package configs
 
 import (
 	"errors"
+	"fmt"
 	"log/slog"
-	"net"
 	"os"
 	"path"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/go-ozzo/ozzo-validation/v4/is"
 	"github.com/spf13/viper"
 )
 
@@ -26,7 +27,10 @@ type Config interface {
 
 	GetDownloadDir() string
 	GetDataDir() string
+
 	GetCertificatesDir() string
+	GetAccountsDir() string
+
 	GetMinCertificateTtl() time.Duration
 	GetMaxDomainCertAttempts() int
 	GetCertRequestPlannerInterval() time.Duration
@@ -76,10 +80,13 @@ type configs struct {
 	CommandCheckInterval     string `mapstructure:"command_check_interval" yaml:"command_check_interval"`         // default: 10ms
 	CertificateCheckInterval string `mapstructure:"certificate_check_interval" yaml:"certificate_check_interval"` // default: 1h
 
-	DownloadDir     string `mapstructure:"download_dir" yaml:"download_dir"`         // default: ./downloads
+	DownloadDir string `mapstructure:"download_dir" yaml:"download_dir"` // default: ./downloads
+
 	CertificatesDir string `mapstructure:"certificates_dir" yaml:"certificates_dir"` // default: ./.certificates
-	DataDir         string `mapstructure:"data_dir" yaml:"data_dir"`                 // default: ./data
-	Domain          string `mapstructure:"domain" yaml:"domain"`
+	AccountsDir     string `mapstructure:"accounts_dir" yaml:"accounts_dir"`         // default: ./.accounts
+
+	DataDir string `mapstructure:"data_dir" yaml:"data_dir"` // default: ./data
+	Domain  string `mapstructure:"domain" yaml:"domain"`
 
 	ListenAddress               string `mapstructure:"listen_address" yaml:"listen_address"` // default: 0.0.0.0
 	HttpPort                    string `mapstructure:"http_port" yaml:"http_port"`           // default: 8072
@@ -155,6 +162,13 @@ func (c *configs) GetCertificatesDir() string {
 		return "./.certificates"
 	}
 	return c.CertificatesDir
+}
+
+func (c *configs) GetAccountsDir() string {
+	if c.AccountsDir == "" {
+		return "./.accounts"
+	}
+	return c.AccountsDir
 }
 
 func (c *configs) GetDomain() string {
@@ -249,7 +263,7 @@ func loadConfigFromFile(filePath string) (*configs, error) {
 		slog.Error("failed to unmarshal config", "file", path.Base(filePath), "error", err)
 		return nil, err
 	}
-
+	slog.Info("Loaded config file", slog.String("file_path", filePath))
 	return &cfg, nil
 }
 
@@ -273,23 +287,36 @@ func LoadConfigs(configPath string) (Config, error) {
 	c.HttpsPort = strings.TrimSpace(c.HttpsPort)
 	c.AcmeEmail = strings.TrimSpace(c.AcmeEmail)
 
-	if net.ParseIP(c.GetBindIPAddress()) == nil {
-		slog.Error("Invalid bind_address: not a valid IP address",
-			slog.String("value", c.GetBindIPAddress()))
-		return nil, errors.New("invalid bind_address")
+	if err := is.IPv4.Validate(c.GetBindIPAddress()); err != nil {
+		slog.Error(
+			"Invalid bind_address: not a valid IPv4 address",
+			"value", c.GetBindIPAddress(),
+		)
+		return nil, fmt.Errorf("invalid bind_address: %w", err)
 	}
 
-	if net.ParseIP(c.GetListenIPAddress()) == nil {
-		slog.Error("Invalid listen_address: not a valid IP address",
-			slog.String("value", c.GetListenIPAddress()))
-		return nil, errors.New("invalid listen_address")
+	if err := is.IPv4.Validate(c.GetListenIPAddress()); err != nil {
+		slog.Error(
+			"Invalid listen_address: not a valid IPv4 address",
+			"value", c.GetListenIPAddress(),
+		)
+		return nil, fmt.Errorf("invalid listen_address: %w", err)
 	}
 
 	portNum, err := strconv.Atoi(c.GetHttpPort())
 	if err != nil || portNum < 1 || portNum > 65535 {
-		return nil, errors.New("invalid bind_port: must be an integer between 1 and 65535")
+		return nil, errors.New("invalid http_port: must be an integer between 1 and 65535")
 	}
-	slog.Info("Loaded config file", slog.String("file_path", configPath))
+
+	if c.IsHttpsEnabled() {
+		if err := is.EmailFormat.Validate(c.AcmeEmail); err != nil {
+			return nil, fmt.Errorf("invalid ACME email address: %w", err)
+		}
+		portNum, err := strconv.Atoi(c.GetHttpsPort())
+		if err != nil || portNum < 1 || portNum > 65535 {
+			return nil, errors.New("invalid https_port: must be an integer between 1 and 65535")
+		}
+	}
 	return c, nil
 }
 

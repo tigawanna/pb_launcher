@@ -2,7 +2,6 @@ package http01
 
 import (
 	"errors"
-	"fmt"
 	"log/slog"
 	"pb_launcher/configs"
 	"pb_launcher/internal/certificates/tlscommon"
@@ -10,30 +9,29 @@ import (
 	"pb_launcher/utils/networktools"
 	"strconv"
 
-	"github.com/go-acme/lego/v4/certcrypto"
 	"github.com/go-acme/lego/v4/certificate"
 	"github.com/go-acme/lego/v4/challenge/http01"
-	"github.com/go-acme/lego/v4/lego"
-	"github.com/go-acme/lego/v4/registration"
-	"github.com/hashicorp/go-retryablehttp"
 )
 
 type HTTP01TLSCertificateRequestService struct {
-	acmeEmail string
-	ipAddress string
-	publicher *Http01ChallengeAddressPublisher
+	acmeEmail      string
+	ipAddress      string
+	publicher      *Http01ChallengeAddressPublisher
+	clientProvider *tlscommon.LetsEncryptClientAccountProvider
 }
 
 var _ tlscommon.Provider = (*HTTP01TLSCertificateRequestService)(nil)
 
 func NewHTTP01TLSCertificateRequestService(
 	publicher *Http01ChallengeAddressPublisher,
+	clientProvider *tlscommon.LetsEncryptClientAccountProvider,
 	c configs.Config,
 ) *HTTP01TLSCertificateRequestService {
 	return &HTTP01TLSCertificateRequestService{
-		publicher: publicher,
-		ipAddress: c.GetListenIPAddress(),
-		acmeEmail: c.GetAcmeEmail(),
+		publicher:      publicher,
+		clientProvider: clientProvider,
+		ipAddress:      c.GetListenIPAddress(),
+		acmeEmail:      c.GetAcmeEmail(),
 	}
 }
 
@@ -42,29 +40,8 @@ func (h *HTTP01TLSCertificateRequestService) RequestCertificate(domain string) (
 	if domainutil.IsWildcardDomain(domain) {
 		return nil, errors.New("wildcard domains are not supported with HTTP-01 challenge")
 	}
-	privateKey, err := certcrypto.GeneratePrivateKey(certcrypto.RSA2048)
-	if err != nil {
-		return nil, err
-	}
-	email := h.acmeEmail
-	if email == "" {
-		slog.Warn("`acme_email` not configured, using default placeholder", "email", fmt.Sprintf("admin@%s", domain))
-		email = fmt.Sprintf("admin@%s", domain)
-	}
-	user := &tlscommon.Account{
-		Email: email,
-		Key:   privateKey,
-	}
 
-	config := lego.NewConfig(user)
-
-	retryClient := retryablehttp.NewClient()
-	retryClient.RetryMax = 5
-	retryClient.HTTPClient = config.HTTPClient
-	retryClient.Logger = nil
-	config.HTTPClient = retryClient.StandardClient()
-
-	client, err := lego.NewClient(config)
+	client, err := h.clientProvider.SetupClient(h.acmeEmail)
 	if err != nil {
 		return nil, err
 	}
@@ -80,11 +57,6 @@ func (h *HTTP01TLSCertificateRequestService) RequestCertificate(domain string) (
 	if err := client.Challenge.SetHTTP01Provider(http01Provider); err != nil {
 		return nil, err
 	}
-	resource, err := client.Registration.Register(registration.RegisterOptions{TermsOfServiceAgreed: true})
-	if err != nil {
-		return nil, err
-	}
-	user.Registration = resource
 
 	request := certificate.ObtainRequest{
 		Domains: []string{domain},

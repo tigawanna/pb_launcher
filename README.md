@@ -99,6 +99,7 @@ disable_https_redirect: false
 # Paths
 download_dir: ./downloads
 certificates_dir: ./.certificates
+accounts_dir: ./.accounts # Let's Encrypt accounts directory
 data_dir: ./data
 
 # Certificate management
@@ -112,7 +113,6 @@ certificate_check_interval: 1m
 # cert:
 #   provider: "cloudflare"
 #   props:
-#     email: "admin@auth_token"
 #     auth_token: ""
 
 

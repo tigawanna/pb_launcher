@@ -65,5 +65,4 @@ func (s *DomainServiceDiscovery) InvalidateDomain(domain string) {
 	if err != nil && !errors.Is(err, bigcache.ErrEntryNotFound) {
 		slog.Error("failed to invalidate domain cache", "domain", domain, "error", err)
 	}
-	slog.Info("invalidated domain cache", "domain", domain)
 }
