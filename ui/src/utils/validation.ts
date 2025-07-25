@@ -208,3 +208,40 @@ export const loginSchema = yup.object({
   email: emailRequired(),
   password: passwordRequired(),
 });
+
+const DEFAULT_URL_ERROR = "Invalid URL";
+const REQUIRED_URL_ERROR = "URL is required";
+
+export const urlNullable = (message = DEFAULT_URL_ERROR) =>
+  yup
+    .string()
+    .transform(sanitizeString)
+    .test("valid-url", message, value => {
+      if (value == null || value === "") return true;
+      try {
+        const url = new URL(value);
+        return url.protocol === "http:" || url.protocol === "https:";
+      } catch {
+        return false;
+      }
+    })
+    .nullable()
+    .default(null);
+
+export const urlRequired = (
+  message = DEFAULT_URL_ERROR,
+  required = REQUIRED_URL_ERROR,
+) =>
+  yup
+    .string()
+    .transform(sanitizeString)
+    .test("valid-url", message, value => {
+      if (value == null || value === "") return true;
+      try {
+        const url = new URL(value);
+        return url.protocol === "http:" || url.protocol === "https:";
+      } catch {
+        return false;
+      }
+    })
+    .required(required);
