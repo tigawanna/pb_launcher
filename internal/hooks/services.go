@@ -14,7 +14,6 @@ import (
 
 func AddServiceHooks(app *pocketbase.PocketBase,
 	serviceDiscovery *domain.ServiceDiscovery,
-	domainDiscovery *domain.DomainServiceDiscovery,
 	planner *certmanager.CertRequestPlannerUsecase,
 	repository repositories.CertRequestRepository,
 ) {
@@ -101,40 +100,6 @@ func AddServiceHooks(app *pocketbase.PocketBase,
 			}
 			serviceDiscovery.InvalidateServiceCacheByID(e.Record.Id)
 			return nil
-		})
-
-	app.OnRecordAfterCreateSuccess(collections.ServicesDomains).BindFunc(func(e *core.RecordEvent) error {
-		if err := e.Next(); err != nil {
-			return err
-		}
-		domain := e.Record.GetString("domain")
-		if e.Record.GetString("use_https") == "yes" {
-			return planner.PostSSLDomainRequest(e.Context, domain, false)
-		}
-		return nil
-	})
-
-	app.OnRecordAfterUpdateSuccess(collections.ServicesDomains).
-		BindFunc(func(e *core.RecordEvent) error {
-			if err := e.Next(); err != nil {
-				return err
-			}
-			domain := e.Record.GetString("domain")
-			domainDiscovery.InvalidateDomain(domain)
-			if e.Record.GetString("use_https") == "yes" {
-				return planner.PostSSLDomainRequest(e.Context, domain, false)
-			}
-			return nil
-		})
-
-	app.OnRecordAfterDeleteSuccess(collections.ServicesDomains).
-		BindFunc(func(e *core.RecordEvent) error {
-			if err := e.Next(); err != nil {
-				return err
-			}
-			domain := e.Record.GetString("domain")
-			domainDiscovery.InvalidateDomain(domain)
-			return repository.DeletePendingByDomain(e.Context, domain)
 		})
 
 }
