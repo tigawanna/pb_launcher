@@ -2,12 +2,14 @@ import classNames from "classnames";
 import { ExternalLink, Pencil, ShieldCheck, Trash2 } from "lucide-react";
 import { useMemo, type FC } from "react";
 import type { DomainDto } from "../../../services/services_domain";
+import { joinUrls } from "../../../utils/url";
 
 type Props = {
   domain: DomainDto;
   url?: string;
   port?: string;
   readonly?: boolean;
+  suffix: string;
   onEdit?: () => void;
   onDelete?: () => void;
   onValidate?: () => void;
@@ -18,6 +20,7 @@ export const DomainCard: FC<Props> = ({
   port,
   readonly,
   url,
+  suffix,
   onEdit,
   onDelete,
   onValidate,
@@ -37,6 +40,12 @@ export const DomainCard: FC<Props> = ({
     };
   }, [domain]);
 
+  const strUrl = useMemo(
+    () =>
+      joinUrls(url ? url : `${fmtdomain.protocol}://${fmtdomain.name}`, suffix),
+    [fmtdomain.name, fmtdomain.protocol, suffix, url],
+  );
+
   return (
     <div
       className={classNames(
@@ -51,9 +60,7 @@ export const DomainCard: FC<Props> = ({
             {fmtdomain.name}
           </span>
           <a
-            href={
-              url ? `${url}/_/` : `${fmtdomain.protocol}://${fmtdomain.name}/_/`
-            }
+            href={strUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"

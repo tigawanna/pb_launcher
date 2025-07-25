@@ -17,32 +17,51 @@ import { useConfirmModal } from "../../../hooks/useConfirmModal";
 
 type Props = {
   service_id: string;
+  proxy_id: string;
+  url_route_suffix: string;
 };
 
-export const DomainsSection: FC<Props> = ({ service_id }) => {
+export const DomainsSection: FC<Props> = ({
+  service_id,
+  proxy_id,
+  url_route_suffix,
+}) => {
   const confirm = useConfirmModal();
   const { openModal } = useModal();
   const proxy = useProxyConfigs();
+  const queryKey = useMemo(() => {
+    if (service_id !== "") return ["services", service_id, "domains"];
+    if (proxy_id !== "") return ["proxy_entries", proxy_id, "domains"];
+    return ["unknown"];
+  }, [service_id, proxy_id]);
 
   const domainsQuery = useQuery({
-    queryKey: ["services", service_id, "domains"],
-    queryFn: () => domainsService.fetchAllByServiceID(service_id),
-    refetchOnMount: true,
+    queryKey,
+    queryFn: async () => {
+      if (service_id !== "")
+        return domainsService.fetchAllByServiceID(service_id!);
+      if (proxy_id !== "")
+        return domainsService.fetchAllDomainsByProxyID(proxy_id!);
+      return [];
+    },
   });
 
   const proxyDomain = useMemo((): DomainDto => {
+    const strid = service_id !== "" ? service_id : proxy_id;
     return {
       id: "__",
-      service: "__",
-      domain: proxy.base_domain ? `${service_id}.${proxy.base_domain}` : "--",
+      service: "",
+      proxy_entry: "",
+      domain: proxy.base_domain ? `${strid}.${proxy.base_domain}` : "--",
       use_https: proxy.use_https ? "yes" : "no",
     };
-  }, [proxy.base_domain, proxy.use_https, service_id]);
+  }, [proxy.base_domain, proxy.use_https, service_id, proxy_id]);
 
   const openCreateModal = () => {
     openModal(
       <DomainForm
         service_id={service_id}
+        proxy_id={proxy_id}
         onSaveRecord={() => setTimeout(domainsQuery.refetch)}
         width={360}
       />,
@@ -56,6 +75,7 @@ export const DomainsSection: FC<Props> = ({ service_id }) => {
     openModal(
       <DomainForm
         service_id={service_id}
+        proxy_id={proxy_id}
         width={360}
         record={record}
         onSaveRecord={() => setTimeout(domainsQuery.refetch)}
@@ -126,6 +146,7 @@ export const DomainsSection: FC<Props> = ({ service_id }) => {
           )}
           port={proxy.use_https ? proxy.https_port : proxy.http_port}
           domain={proxyDomain}
+          suffix={url_route_suffix}
         />
         {(domainsQuery.data ?? []).map(domain => (
           <DomainCard
@@ -135,6 +156,7 @@ export const DomainsSection: FC<Props> = ({ service_id }) => {
             onEdit={() => openEditModal(domain)}
             onDelete={() => handleDelete(domain.id)}
             onValidate={() => handleCreateSSLRequest(domain.domain)}
+            suffix={url_route_suffix}
           />
         ))}
       </div>

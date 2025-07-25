@@ -1,20 +1,12 @@
-import { useMemo, useRef, useState, type FC } from "react";
+import { useMemo, useRef, type FC } from "react";
 import type { ServiceDto } from "../../../services/services";
-import {
-  Check,
-  Copy,
-  MoreVertical,
-  Pencil,
-  Power,
-  ShieldAlert,
-  Trash2,
-} from "lucide-react";
+import { MoreVertical, Pencil, Power, ShieldAlert, Trash2 } from "lucide-react";
 import classNames from "classnames";
-import { useCopyToClipboard } from "@uidotdev/usehooks";
 import { useModal } from "../../../components/modal/hook";
 import { DefaultCredentialsCard } from "./DefaultCredentialsCard";
 import type { ProxyConfigsResponse } from "../../../services/config";
 import { formatUrl } from "../../../utils/url";
+import { CopyableField } from "./CopyableField";
 
 type Props = {
   proxyInfo: ProxyConfigsResponse;
@@ -217,41 +209,8 @@ export const ServiceCard: FC<Props> = ({
           </div>
         </div>
         {serviceUrls.map(serviceUrl => (
-          <ServiceCardURL key={serviceUrl} serviceUrl={serviceUrl} />
+          <CopyableField key={serviceUrl} value={serviceUrl} isUrl />
         ))}
-      </div>
-    </div>
-  );
-};
-
-const ServiceCardURL: FC<{ serviceUrl: string }> = ({ serviceUrl }) => {
-  const [, copyToClipboard] = useCopyToClipboard();
-  const [copiedField, setCopiedField] = useState<"url" | null>(null);
-  const handleCopy = (value: string, field: "url") => {
-    copyToClipboard(value);
-    setCopiedField(field);
-    setTimeout(() => setCopiedField(null), 1200);
-  };
-
-  return (
-    <div key={serviceUrl} className="flex gap-8">
-      <a
-        href={serviceUrl}
-        target="_blank"
-        rel="noreferrer"
-        className="link link-primary truncate text-xs flex-1"
-      >
-        {serviceUrl}
-      </a>
-      <div className="flex gap-4">
-        {copiedField === "url" ? (
-          <Check className="w-4 h-4 select-none active:translate-[0.5px] cursor-pointer" />
-        ) : (
-          <Copy
-            className="w-4 h-4 select-none active:translate-[0.5px] cursor-pointer"
-            onClick={() => handleCopy(serviceUrl ?? "", "url")}
-          />
-        )}
       </div>
     </div>
   );
