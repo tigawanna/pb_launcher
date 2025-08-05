@@ -1,8 +1,9 @@
 import classNames from "classnames";
-import { ExternalLink, Pencil, ShieldCheck, Trash2 } from "lucide-react";
+import { ExternalLink, Info, Pencil, ShieldCheck, Trash2 } from "lucide-react";
 import { useMemo, type FC } from "react";
 import type { DomainDto } from "../../../services/services_domain";
 import { joinUrls } from "../../../utils/url";
+import { useModal } from "../../../components/modal/hook";
 
 type Props = {
   domain: DomainDto;
@@ -25,6 +26,7 @@ export const DomainCard: FC<Props> = ({
   onDelete,
   onValidate,
 }) => {
+  const { openModal } = useModal();
   const fmtdomain = useMemo(() => {
     let status = domain.x_cert_request_state;
     if (status == "failed" && !domain.x_reached_max_attempt) {
@@ -45,6 +47,19 @@ export const DomainCard: FC<Props> = ({
       joinUrls(url ? url : `${fmtdomain.protocol}://${fmtdomain.name}`, suffix),
     [fmtdomain.name, fmtdomain.protocol, suffix, url],
   );
+
+  const showErrorModal = (message: string) => {
+    if (!message.trim()) return;
+
+    openModal(
+      <div className="p-4 w-full max-w-md sm:max-w-lg md:max-w-xl">
+        <div className="alert alert-error">
+          <span>{message}</span>
+        </div>
+      </div>,
+      { title: "Certificate Generation Failed" },
+    );
+  };
 
   return (
     <div
@@ -70,16 +85,22 @@ export const DomainCard: FC<Props> = ({
         </div>
         {fmtdomain.status && fmtdomain.protocol === "https" && (
           <span
-            className={classNames("text-xs font-medium", {
+            className={classNames("text-xs font-medium flex gap-2 ", {
               "text-warning":
                 fmtdomain.status === "pending" && !fmtdomain.has_valid_ssl_cert,
               "text-success":
                 fmtdomain.status === "approved" || fmtdomain.has_valid_ssl_cert,
-              "text-error":
+              "text-error cursor-pointer":
                 fmtdomain.status === "failed" && !fmtdomain.has_valid_ssl_cert,
             })}
+            onClick={() => {
+              if (fmtdomain.status === "failed") {
+                showErrorModal(fmtdomain.failed_error_message ?? "");
+              }
+            }}
           >
             {fmtdomain.status}
+            {fmtdomain.status === "failed" && <Info className="w-4 h-4" />}
           </span>
         )}
       </div>
@@ -134,11 +155,6 @@ export const DomainCard: FC<Props> = ({
           </div>
         )}
       </div>
-      {fmtdomain.protocol === "https" && fmtdomain.reached_max_attempt && (
-        <div className="pl-2 text-xs text-error mt-2">
-          <p>{fmtdomain.failed_error_message}</p>
-        </div>
-      )}
     </div>
   );
 };
