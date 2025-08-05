@@ -3,8 +3,6 @@ package hooks
 import (
 	"errors"
 	"pb_launcher/collections"
-	certmanager "pb_launcher/internal/certmanager/domain"
-	"pb_launcher/internal/certmanager/domain/repositories"
 	"pb_launcher/internal/proxy/domain"
 	"slices"
 
@@ -14,8 +12,6 @@ import (
 
 func AddServiceHooks(app *pocketbase.PocketBase,
 	serviceDiscovery *domain.ServiceDiscovery,
-	planner *certmanager.CertRequestPlannerUsecase,
-	repository repositories.CertRequestRepository,
 ) {
 	app.OnRecordCreateRequest(collections.Services).
 		BindFunc(func(e *core.RecordRequestEvent) error {
