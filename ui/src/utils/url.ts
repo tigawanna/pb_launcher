@@ -2,13 +2,16 @@ export const joinUrls = (...parts: string[]): string => {
   const leadingSlash = /^\/+/;
   const trailingSlash = /\/+$/;
 
+  const hasLeadingSlash = parts[0]?.startsWith("/") ?? false;
+
   const cleanedParts = parts.map((part, i) => {
     const isLast = i === parts.length - 1;
     const cleaned = part.replace(leadingSlash, "");
     return isLast ? cleaned : cleaned.replace(trailingSlash, "");
   });
 
-  return cleanedParts.filter(Boolean).join("/");
+  const result = cleanedParts.filter(Boolean).join("/");
+  return hasLeadingSlash ? "/" + result : result;
 };
 
 export const formatUrl = (
