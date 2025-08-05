@@ -6,21 +6,24 @@ import (
 	"encoding/gob"
 	"errors"
 	"log/slog"
+	"pb_launcher/internal/proxy/domain/dtos"
 	"pb_launcher/internal/proxy/domain/repositories"
+
 	"time"
 
 	"github.com/allegro/bigcache/v3"
 )
 
-type DomainServiceDiscovery struct {
-	repo  repositories.DomainTargetRepository
+type ProxyEntryDiscovery struct {
+	repo  repositories.ProxyEntriesRepository
 	cache *bigcache.BigCache
 }
 
 func init() {
-	gob.Register(&repositories.DomainTarget{})
+	gob.Register(&dtos.ProxyEntryDto{})
 }
-func NewDomainServiceDiscovery(repo repositories.DomainTargetRepository) (*DomainServiceDiscovery, error) {
+
+func NewProxyEntryDiscovery(repo repositories.ProxyEntriesRepository) (*ProxyEntryDiscovery, error) {
 
 	cache, err := bigcache.New(context.Background(), bigcache.Config{
 		Shards:           256,              // increases parallelism
@@ -35,42 +38,46 @@ func NewDomainServiceDiscovery(repo repositories.DomainTargetRepository) (*Domai
 		return nil, err
 	}
 
-	return &DomainServiceDiscovery{
+	return &ProxyEntryDiscovery{
 		repo:  repo,
 		cache: cache,
 	}, nil
 }
 
-func (s *DomainServiceDiscovery) FindTargetByDomain(ctx context.Context, domain string) (*repositories.DomainTarget, error) {
-	if data, err := s.cache.Get(domain); err == nil {
+func (s *ProxyEntryDiscovery) FindEnabledProxyEntryByID(ctx context.Context, id string) (*dtos.ProxyEntryDto, error) {
+	if data, err := s.cache.Get(id); err == nil {
 		buf := bytes.NewBuffer(data)
 		dec := gob.NewDecoder(buf)
-		var dto repositories.DomainTarget
+		var dto dtos.ProxyEntryDto
 		if err := dec.Decode(&dto); err == nil {
 			return &dto, nil
 		}
 	} else if !errors.Is(err, bigcache.ErrEntryNotFound) {
-		slog.Warn("failed to access cache", "domain", domain, "error", err)
+		slog.Warn("failed to access cache", "proxy_entry", id, "error", err)
 	}
 
-	target, err := s.repo.FindByDomain(ctx, domain)
+	dto, err := s.repo.FindEnabledProxyEntryByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 
 	var buf bytes.Buffer
 	enc := gob.NewEncoder(&buf)
-	if err := enc.Encode(target); err == nil {
-		if err := s.cache.Set(domain, buf.Bytes()); err != nil {
-			slog.Warn("failed to cache target", "domain", domain, "error", err)
+	if err := enc.Encode(dto); err == nil {
+		if err := s.cache.Set(id, buf.Bytes()); err != nil {
+			slog.Warn("failed to cache proxy entries", "proxy_entry", id, "error", err)
 		}
 	}
-	return target, nil
+
+	return dto, nil
 }
 
-func (s *DomainServiceDiscovery) InvalidateDomain(domain string) {
-	err := s.cache.Delete(domain)
+func (s *ProxyEntryDiscovery) InvalidateProxyEntriesCacheByID(id string) error {
+	err := s.cache.Delete(id)
 	if err != nil && !errors.Is(err, bigcache.ErrEntryNotFound) {
-		slog.Error("failed to invalidate domain cache", "domain", domain, "error", err)
+		slog.Error("failed to invalidate cache", "id", id, "error", err)
+		return err
 	}
+	slog.Info("invalidated proxy entry cache", "proxy_entry", id)
+	return nil
 }

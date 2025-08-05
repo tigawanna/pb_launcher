@@ -15,11 +15,21 @@ var Module = fx.Module(
 			repos.NewServiceRepository,
 			fx.As(new(repositories.ServiceRepository)),
 		),
+		fx.Annotate(
+			repos.NewProxyEntriesRepository,
+			fx.As(new(repositories.ProxyEntriesRepository)),
+		),
+		fx.Annotate(
+			repos.NewDomainTargetRepository,
+			fx.As(new(repositories.DomainTargetRepository)),
+		),
 	),
 	fx.Provide(
 		domain.NewServiceDiscovery,
 		domain.NewDomainServiceDiscovery,
+		domain.NewProxyEntryDiscovery,
 	),
+	fx.Provide(NewDynamicReverseProxyDiscovery),
 	fx.Provide(NewDynamicReverseProxy),
 	fx.Invoke(RunHttpProxy, RunHTTPSProxy, PrintProxyInfo),
 )

@@ -1,16 +1,23 @@
-import type { PropsWithChildren } from "react";
-import { NavLink, Outlet } from "react-router-dom";
-import { Server, User, LogOut, Settings } from "lucide-react";
+import { useMemo, type PropsWithChildren } from "react";
+import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { Server, Waypoints, User, LogOut, Settings } from "lucide-react";
 import { useConfirmModal } from "../hooks/useConfirmModal";
 import { authService } from "../services/auth";
 import { useViewportHeight } from "../hooks/useViewportHeight";
+import classNames from "classnames";
 
 export const DASHBOARD_LAYOUT_APP_BAR_HEIGHT = 56;
 
 export const DashboardLayout = ({ children }: PropsWithChildren) => {
+  const { pathname } = useLocation();
   const height = useViewportHeight();
 
   const confirm = useConfirmModal();
+  const selected = useMemo(() => {
+    if (pathname === "/" || pathname.startsWith("/services/")) return "service";
+    if (pathname === "/proxy" || pathname.startsWith("/proxy/")) return "proxy";
+    return "<none>";
+  }, [pathname]);
 
   const logout = async () => {
     const confirmed = await confirm(
@@ -28,14 +35,33 @@ export const DashboardLayout = ({ children }: PropsWithChildren) => {
         className="w-full bg-base-100 shadow-sm"
       >
         <div className="mx-auto w-full px-4 py-3 flex items-center justify-between">
-          <NavLink
-            to="/"
-            className="btn btn-sm btn-ghost gap-2 text-base-content"
-          >
-            <Server className="w-4 h-4" />
-            Services
-          </NavLink>
+          <div className="flex">
+            <NavLink
+              to="/"
+              className={classNames(
+                "btn btn-sm btn-ghost gap-2 text-base-content transition-colors",
+                {
+                  "bg-base-200 text-primary": selected === "service",
+                },
+              )}
+            >
+              <Server className="w-4 h-4" />
+              Services
+            </NavLink>
 
+            <NavLink
+              to="/proxy"
+              className={classNames(
+                "btn btn-sm btn-ghost gap-2 text-base-content transition-colors",
+                {
+                  "bg-base-200 text-primary": selected === "proxy",
+                },
+              )}
+            >
+              <Waypoints className="w-4 h-4" />
+              Proxy
+            </NavLink>
+          </div>
           <div className="dropdown dropdown-end">
             <label tabIndex={0} className="btn btn-sm btn-ghost gap-2">
               <User className="w-4 h-4" />

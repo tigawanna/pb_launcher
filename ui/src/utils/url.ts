@@ -1,11 +1,14 @@
 export const joinUrls = (...parts: string[]): string => {
-  const leadingSlash = new RegExp("^/+");
-  const trailingSlash = new RegExp("/+$");
+  const leadingSlash = /^\/+/;
+  const trailingSlash = /\/+$/;
 
-  return parts
-    .map(p => p.replace(leadingSlash, "").replace(trailingSlash, ""))
-    .filter(Boolean)
-    .join("/");
+  const cleanedParts = parts.map((part, i) => {
+    const isLast = i === parts.length - 1;
+    const cleaned = part.replace(leadingSlash, "");
+    return isLast ? cleaned : cleaned.replace(trailingSlash, "");
+  });
+
+  return cleanedParts.filter(Boolean).join("/");
 };
 
 export const formatUrl = (

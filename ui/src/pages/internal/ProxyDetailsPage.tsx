@@ -1,13 +1,11 @@
 import { Navigate, useParams, useSearchParams } from "react-router-dom";
 import { useState } from "react";
 import { MenuIcon, XIcon } from "lucide-react";
-import { GeneralSection } from "./details_section/GeneralSection";
+import { ProxyGeneralSection } from "./proxy_section/ProxyGeneralSection";
 import { DomainsSection } from "./details_section/DomainsSection";
-import { ServiceLogsSection } from "./details_section/ServiceLogsSection";
 
-export const ServiceDetailPage = () => {
-  const { service_id } = useParams<{ service_id: string }>();
-
+export const ProxyDetailsPage = () => {
+  const { proxy_id } = useParams<{ proxy_id: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
   const activeSection = searchParams.get("section") || "general";
   const [menuOpen, setMenuOpen] = useState(false);
@@ -20,7 +18,7 @@ export const ServiceDetailPage = () => {
   const menuItemClass = (section: string) =>
     `btn btn-ghost justify-start w-full text-left ${activeSection === section ? "bg-primary text-primary-content" : ""}`;
 
-  if (service_id == null || service_id === "") return <Navigate to={"/"} />;
+  if (proxy_id == null || proxy_id === "") return <Navigate to={"/"} />;
   return (
     <div className="flex h-full flex-col md:flex-row bg-base-100 text-base-content">
       <div className="md:hidden p-4 flex justify-end items-center border-b border-base-300">
@@ -44,7 +42,7 @@ export const ServiceDetailPage = () => {
                 className={menuItemClass("general")}
                 onClick={() => handleSectionChange("general")}
               >
-                Service
+                Proxy Entry
               </button>
             </li>
             <li>
@@ -55,22 +53,6 @@ export const ServiceDetailPage = () => {
                 Domains
               </button>
             </li>
-            <li>
-              <button
-                className={menuItemClass("logs")}
-                onClick={() => handleSectionChange("logs")}
-              >
-                Logs
-              </button>
-            </li>
-            {/* <li>
-              <button
-                className={menuItemClass("settings")}
-                onClick={() => handleSectionChange("settings")}
-              >
-                Settings
-              </button>
-            </li> */}
           </ul>
         </aside>
       )}
@@ -80,7 +62,7 @@ export const ServiceDetailPage = () => {
           <div className="mb-8 ">
             <h3 className="text-lg font-semibold mb-6">General</h3>
             <div className="md:px-4 py-6 bg-base-200 rounded-box">
-              <GeneralSection service_id={service_id} />
+              <ProxyGeneralSection proxy_id={proxy_id} />
             </div>
           </div>
         )}
@@ -90,28 +72,10 @@ export const ServiceDetailPage = () => {
             <h3 className="text-lg font-semibold mb-4">Domains</h3>
             <div className="md:px-4 rounded-box">
               <DomainsSection
-                service_id={service_id}
-                proxy_id=""
-                url_route_suffix="/_/"
+                proxy_id={proxy_id}
+                service_id=""
+                url_route_suffix={""}
               />
-            </div>
-          </div>
-        )}
-
-        {activeSection === "logs" && (
-          <div className="mb-8">
-            <h3 className="text-lg font-semibold mb-6">Logs</h3>
-            <div className="px-4 py-4 bg-base-200 rounded-box">
-              <ServiceLogsSection service_id={service_id} />
-            </div>
-          </div>
-        )}
-
-        {activeSection === "settings" && (
-          <div className="mb-8">
-            <h3 className="text-lg font-semibold mb-6">Settings</h3>
-            <div className="px-4 py-8 bg-base-200 rounded-box">
-              Settings panel
             </div>
           </div>
         )}
