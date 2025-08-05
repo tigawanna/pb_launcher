@@ -25,6 +25,7 @@ const schema = object({
 type Props = {
   service_id: string;
   proxy_id: string;
+  use_https: "yes" | "no";
   record?: DomainDto;
   onSaveRecord?: () => void;
   width?: number;
@@ -35,13 +36,14 @@ export const DomainForm: FC<Props> = ({
   proxy_id,
   record,
   width,
+  use_https,
   onSaveRecord,
 }) => {
   const { closeModal } = useModal();
   const form = useCustomForm(schema, {
     defaultValues: {
       domain: record?.domain,
-      use_https: record?.use_https === "yes",
+      use_https: (record?.use_https ?? use_https) === "yes",
     },
   });
 

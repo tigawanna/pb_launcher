@@ -63,6 +63,7 @@ export const DomainsSection: FC<Props> = ({
         service_id={service_id}
         proxy_id={proxy_id}
         onSaveRecord={() => setTimeout(domainsQuery.refetch)}
+        use_https={proxy.use_https ? "yes" : "no"}
         width={360}
       />,
       {
@@ -79,6 +80,7 @@ export const DomainsSection: FC<Props> = ({
         width={360}
         record={record}
         onSaveRecord={() => setTimeout(domainsQuery.refetch)}
+        use_https={proxy.use_https ? "yes" : "no"}
       />,
       {
         title: "Edit Domain",
