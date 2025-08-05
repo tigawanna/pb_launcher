@@ -7,7 +7,6 @@ export interface ProxyEntryDto {
   id: string;
   name: string;
   target_url: string;
-  rewrite_path: string;
   enabled: "yes" | "no";
   domains?: DomainDto[];
 }
@@ -21,14 +20,6 @@ export const proxyEntryService = {
     return record;
   },
 
-  findRewritePath: async (id: string) => {
-    const proxyEntries = pb.collection(PROXY_ENTRIES);
-    const record = await proxyEntries.getOne<{ rewrite_path: string }>(id, {
-      fields: "rewrite_path",
-    });
-    return record.rewrite_path ?? "";
-  },
-
   fetchAll: async () => {
     const proxyEntries = pb.collection(PROXY_ENTRIES);
     const records = await proxyEntries.getFullList<ProxyEntryDto>({
@@ -40,11 +31,7 @@ export const proxyEntryService = {
     const proxyEntries = pb.collection(PROXY_ENTRIES);
     await proxyEntries.update(id, { deleted: new Date().toJSON() });
   },
-  create: async (data: {
-    name: string;
-    target_url: string;
-    rewrite_path: string;
-  }) => {
+  create: async (data: { name: string; target_url: string }) => {
     const proxyEntries = pb.collection(PROXY_ENTRIES);
     await proxyEntries.create({ ...data, enabled: "yes" });
   },
@@ -52,7 +39,6 @@ export const proxyEntryService = {
     id: string;
     name: string;
     target_url: string;
-    rewrite_path: string;
     enabled: string;
   }) => {
     const proxyEntries = pb.collection(PROXY_ENTRIES);

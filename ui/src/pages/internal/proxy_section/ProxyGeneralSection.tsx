@@ -7,10 +7,9 @@ import { ProxyEntryForm } from "../forms/ProxyEntryForm";
 
 type Props = {
   proxy_id: string;
-  onChange: () => void;
 };
 
-export const ProxyGeneralSection: FC<Props> = ({ proxy_id, onChange }) => {
+export const ProxyGeneralSection: FC<Props> = ({ proxy_id }) => {
   const proxyMapQuery = useQuery({
     queryKey: ["proxy_entires", proxy_id],
     queryFn: () => proxyEntryService.fetchById(proxy_id),
@@ -37,7 +36,6 @@ export const ProxyGeneralSection: FC<Props> = ({ proxy_id, onChange }) => {
         record={proxyMapQuery.data}
         onSaveRecord={() => {
           setTimeout(() => proxyMapQuery.refetch());
-          onChange();
         }}
       />
     </div>

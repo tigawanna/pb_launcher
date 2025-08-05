@@ -1,7 +1,6 @@
 import { object } from "yup";
 import {
   booleanRequired,
-  stringNullable,
   stringRequired,
   urlRequired,
 } from "../../../utils/validation";
@@ -19,7 +18,6 @@ import { proxyEntryService, type ProxyEntryDto } from "../../../services/proxy";
 const schema = object({
   name: stringRequired(),
   target_url: urlRequired(),
-  rewrite_path: stringNullable(),
   enabled: booleanRequired(), //yes, no
 });
 
@@ -35,7 +33,6 @@ export const ProxyEntryForm: FC<Props> = ({ onSaveRecord, record, width }) => {
     defaultValues: {
       name: record?.name,
       target_url: record?.target_url,
-      rewrite_path: record?.rewrite_path,
       enabled: record?.enabled === "yes",
     },
   });
@@ -61,19 +58,17 @@ export const ProxyEntryForm: FC<Props> = ({ onSaveRecord, record, width }) => {
   });
 
   const handleFormSubmit = form.handleSubmit(
-    ({ name, target_url, rewrite_path, enabled }) => {
+    ({ name, target_url, enabled }) => {
       if (record == null)
         createMutation.mutate({
           name,
           target_url,
-          rewrite_path: rewrite_path ?? "",
         });
       else
         updateMutation.mutate({
           id: record.id,
           name,
           target_url,
-          rewrite_path: rewrite_path ?? "",
           enabled: enabled ? "yes" : "no",
         });
     },
@@ -107,14 +102,6 @@ export const ProxyEntryForm: FC<Props> = ({ onSaveRecord, record, width }) => {
           autoComplete="off"
           error={form.formState.errors.target_url}
           placeholder="http://127.0.0.1:8080"
-        />
-
-        <InputField
-          label="Rewrite Path"
-          registration={form.register("rewrite_path")}
-          autoComplete="off"
-          error={form.formState.errors.rewrite_path}
-          placeholder="/v1/api"
         />
 
         <div

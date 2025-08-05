@@ -23,11 +23,6 @@ func init() {
 				System:   true,
 				Required: true,
 			},
-			&core.TextField{
-				Name:    "rewrite_path",
-				System:  true,
-				Pattern: `^$|^\/[a-zA-Z0-9\-\._~\/]*$`,
-			},
 			&core.SelectField{
 				Name:      "enabled",
 				System:    true,

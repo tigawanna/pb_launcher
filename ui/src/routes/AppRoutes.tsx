@@ -95,6 +95,7 @@ export const AppRoutes = () => {
           <Route path="/proxy" element={<ProxyPage />} />
           <Route path="/services/:service_id" element={<ServiceDetailPage />} />
           <Route path="/proxy/:proxy_id" element={<ProxyDetailsPage />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>
     </BrowserRouter>

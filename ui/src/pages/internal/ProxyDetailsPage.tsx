@@ -1,22 +1,14 @@
 import { Navigate, useParams, useSearchParams } from "react-router-dom";
-import { useMemo, useState, type FC } from "react";
+import { useState } from "react";
 import { MenuIcon, XIcon } from "lucide-react";
 import { ProxyGeneralSection } from "./proxy_section/ProxyGeneralSection";
 import { DomainsSection } from "./details_section/DomainsSection";
-import { useQuery, useQueryClient, type QueryKey } from "@tanstack/react-query";
-import { proxyEntryService } from "../../services/proxy";
 
 export const ProxyDetailsPage = () => {
   const { proxy_id } = useParams<{ proxy_id: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
   const activeSection = searchParams.get("section") || "general";
   const [menuOpen, setMenuOpen] = useState(false);
-
-  const rewritePathQueryKey = useMemo(
-    () => ["proxy_entires", proxy_id, "rewrite_path"],
-    [proxy_id],
-  );
-  const queryClient = useQueryClient();
 
   const handleSectionChange = (section: string) => {
     setSearchParams({ section });
@@ -70,16 +62,7 @@ export const ProxyDetailsPage = () => {
           <div className="mb-8 ">
             <h3 className="text-lg font-semibold mb-6">General</h3>
             <div className="md:px-4 py-6 bg-base-200 rounded-box">
-              <ProxyGeneralSection
-                proxy_id={proxy_id}
-                onChange={() =>
-                  setTimeout(() =>
-                    queryClient.refetchQueries({
-                      queryKey: rewritePathQueryKey,
-                    }),
-                  )
-                }
-              />
+              <ProxyGeneralSection proxy_id={proxy_id} />
             </div>
           </div>
         )}
@@ -88,32 +71,15 @@ export const ProxyDetailsPage = () => {
           <div className="mb-8">
             <h3 className="text-lg font-semibold mb-4">Domains</h3>
             <div className="md:px-4 rounded-box">
-              <DomainsSectionWrap
-                queryKey={rewritePathQueryKey}
+              <DomainsSection
                 proxy_id={proxy_id}
+                service_id=""
+                url_route_suffix={""}
               />
             </div>
           </div>
         )}
       </main>
     </div>
-  );
-};
-
-export const DomainsSectionWrap: FC<{
-  queryKey: QueryKey;
-  proxy_id: string;
-}> = ({ proxy_id, queryKey }) => {
-  const rewritePathQuery = useQuery({
-    queryKey,
-    queryFn: () => proxyEntryService.findRewritePath(proxy_id),
-  });
-
-  return (
-    <DomainsSection
-      proxy_id={proxy_id}
-      service_id=""
-      url_route_suffix={rewritePathQuery.data ?? ""}
-    />
   );
 };

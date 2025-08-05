@@ -3,7 +3,7 @@ import { type FC, useMemo, useRef } from "react";
 import classNames from "classnames";
 
 import type { ProxyConfigsResponse } from "../../../services/config";
-import { formatUrl, joinUrls } from "../../../utils/url";
+import { formatUrl } from "../../../utils/url";
 import { CopyableField } from "./CopyableField";
 import type { ProxyEntryDto } from "../../../services/proxy";
 import { MoreVertical, Pencil, Trash2 } from "lucide-react";
@@ -95,14 +95,6 @@ export const ProxyCard: FC<Props> = ({
             <span className="truncate text-right">{entry.target_url}</span>
           </div>
           <div className="flex justify-between">
-            <span className="font-medium">Rewrite Path:</span>
-            <span className="text-right">
-              {entry.rewrite_path || (
-                <span className="italic text-base-content/60">None</span>
-              )}
-            </span>
-          </div>
-          <div className="flex justify-between">
             <span className="font-medium">Enabled:</span>
             <span
               className={classNames("badge badge-sm", {
@@ -116,8 +108,7 @@ export const ProxyCard: FC<Props> = ({
         </div>
 
         {urls.map(url => {
-          const fullUrl = joinUrls(url, entry.rewrite_path);
-          return <CopyableField key={fullUrl} value={fullUrl} isUrl />;
+          return <CopyableField key={url} value={url} isUrl />;
         })}
       </div>
     </div>
