@@ -1,5 +1,5 @@
 import { pb } from "./client/pb";
-import { type DomainDto } from "./services_domain";
+import { domainsService, type DomainDto } from "./services_domain";
 
 const PROXY_ENTRIES = "proxy_entries";
 
@@ -21,11 +21,20 @@ export const proxyEntryService = {
   },
 
   fetchAll: async () => {
-    const proxyEntries = pb.collection(PROXY_ENTRIES);
-    const records = await proxyEntries.getFullList<ProxyEntryDto>({
-      filter: `deleted=""`,
-    });
-    return records;
+    const [records, domains] = await Promise.all([
+      pb.collection(PROXY_ENTRIES).getFullList<ProxyEntryDto>({
+        filter: `deleted=""`,
+      }),
+      domainsService.fetchFullList(),
+    ]);
+    return records.map(
+      (entry): ProxyEntryDto => ({
+        ...entry,
+        domains: domains.filter(
+          d => d.proxy_entry === entry.id && d.x_has_valid_ssl_cert,
+        ),
+      }),
+    );
   },
   delete: async (id: string) => {
     const proxyEntries = pb.collection(PROXY_ENTRIES);

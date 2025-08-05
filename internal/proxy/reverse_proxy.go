@@ -51,6 +51,7 @@ func (rp *DynamicReverseProxy) ServeHTTP(w http.ResponseWriter, r *http.Request)
 	if isAcmeChallenge {
 		targetURL, err := rp.http01Store.ResolveAddress()
 		if err != nil {
+			slog.Warn("failed to resolve HTTP-01 challenge address", "error", err)
 			http.Error(w, "not found", http.StatusInternalServerError)
 			return
 		}
