@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"io/fs"
 	"path"
 	"pb_launcher/ui"
@@ -30,18 +29,15 @@ func ServeEmbeddedUI(app *pocketbase.PocketBase) {
 		se.Router.Any("/{path...}", func(e *core.RequestEvent) error {
 			reqPath := strings.TrimLeft(path.Clean(e.Request.URL.Path), "/")
 			if reqPath == "" || reqPath == "/" {
-				fmt.Println("01")
 				reqPath = "index.html"
 			}
 
 			info, err := fs.Stat(ui.DistDirFS, reqPath)
 			if err != nil || info.IsDir() {
 				reqPath = "index.html"
-				fmt.Println("02")
 			}
 			if ext := path.Ext(reqPath); err == nil {
 				if !allowedExts[ext] {
-					fmt.Println("03")
 					reqPath = "index.html"
 				}
 			}

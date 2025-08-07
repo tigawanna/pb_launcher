@@ -40,6 +40,18 @@ func NewDynamicReverseProxy(
 
 const AcmeChallengePath = "/.well-known/acme-challenge/"
 
+func (rp *DynamicReverseProxy) shouldSkipTimeout(r *http.Request) bool {
+	if strings.EqualFold(r.Header.Get("X-No-Timeout"), "true") {
+		return true
+	}
+
+	upgrade := strings.ToLower(r.Header.Get("Connection")) == "upgrade"
+	websocket := strings.ToLower(r.Header.Get("Upgrade")) == "websocket"
+	sse := strings.Contains(r.Header.Get("Accept"), "text/event-stream")
+
+	return (upgrade && websocket) || sse
+}
+
 func (rp *DynamicReverseProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), rp.timeout)
 	defer cancel()
@@ -66,9 +78,16 @@ func (rp *DynamicReverseProxy) ServeHTTP(w http.ResponseWriter, r *http.Request)
 		}
 	}
 
-	handler := http.TimeoutHandler(proxy, rp.timeout, "proxy timeout")
+	var handler http.Handler
+	if rp.shouldSkipTimeout(r) {
+		handler = proxy
+	} else {
+		handler = http.TimeoutHandler(proxy, rp.timeout, "proxy request timeout")
+	}
 
 	if networktools.IsRequestSecure(r) || !rp.useHttps || rp.skipHttpsRedirect || isAcmeChallenge {
+		if rp.shouldSkipTimeout(r) {
+		}
 		handler.ServeHTTP(w, r.WithContext(ctx))
 		return
 	}
